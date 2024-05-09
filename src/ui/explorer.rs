@@ -8,7 +8,7 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::action::Action;
 
-use super::component::Component;
+use super::component::{get_block_container, Component, ComponentProps};
 
 #[derive(Debug)]
 pub struct Explorer<'a> {
@@ -26,11 +26,13 @@ impl<'a> Explorer<'a> {
 }
 
 impl Component for Explorer<'_> {
-    fn render(&mut self, f: &mut ratatui::prelude::Frame, area: ratatui::prelude::Rect, props: ()) {
-        let explorer = Block::default()
-            .borders(Borders::ALL)
-            .padding(Padding::horizontal(1))
-            .title(Title::default().content("Explorer"));
+    fn render(
+        &mut self,
+        f: &mut ratatui::prelude::Frame,
+        area: ratatui::prelude::Rect,
+        props: Option<ComponentProps>,
+    ) {
+        let explorer = get_block_container("Explorer", props);
 
         f.render_widget(explorer, area);
     }

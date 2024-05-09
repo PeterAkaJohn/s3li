@@ -8,7 +8,10 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::action::Action;
 
-use super::component::Component;
+use super::{
+    component::{get_block_container, Component, ComponentProps},
+    list::WithList,
+};
 
 #[derive(Debug)]
 pub struct Accounts<'a> {
@@ -16,6 +19,20 @@ pub struct Accounts<'a> {
     list_state: ListState,
     available_accounts: Vec<&'a str>,
     ui_tx: UnboundedSender<Action>,
+}
+
+impl WithList for Accounts<'_> {
+    fn get_list_items_len(&self) -> usize {
+        self.available_accounts.len()
+    }
+
+    fn get_list_state_selected(&self) -> Option<usize> {
+        self.list_state.selected()
+    }
+
+    fn set_selected(&mut self, idx: Option<usize>) {
+        self.list_state.select(idx);
+    }
 }
 
 impl<'a> Accounts<'a> {
@@ -27,44 +44,16 @@ impl<'a> Accounts<'a> {
             list_state: ListState::default(),
         }
     }
-
-    fn unselect(&mut self) {
-        self.list_state.select(None);
-    }
-    fn select_next(&mut self) {
-        let idx = match self.list_state.selected() {
-            Some(selected_idx) => {
-                if selected_idx == self.available_accounts.len() - 1 {
-                    0
-                } else {
-                    selected_idx + 1
-                }
-            }
-            None => 0,
-        };
-        self.list_state.select(Some(idx))
-    }
-    fn select_previous(&mut self) {
-        let idx = match self.list_state.selected() {
-            Some(selected_idx) => {
-                if selected_idx == 0 {
-                    self.available_accounts.len() - 1
-                } else {
-                    selected_idx - 1
-                }
-            }
-            None => self.available_accounts.len() - 1,
-        };
-        self.list_state.select(Some(idx))
-    }
 }
 
 impl Component for Accounts<'_> {
-    fn render(&mut self, f: &mut ratatui::prelude::Frame, area: ratatui::prelude::Rect, props: ()) {
-        let sources = Block::default()
-            .borders(Borders::ALL)
-            .padding(Padding::horizontal(1))
-            .title(Title::default().content("Accounts"));
+    fn render(
+        &mut self,
+        f: &mut ratatui::prelude::Frame,
+        area: ratatui::prelude::Rect,
+        props: Option<ComponentProps>,
+    ) {
+        let accounts = get_block_container("Accounts", props);
 
         let active_style = Style::default().fg(Color::LightGreen);
         let default_style = Style::default().fg(Color::White);
@@ -80,7 +69,7 @@ impl Component for Accounts<'_> {
             .collect::<Vec<ListItem>>();
 
         let list = List::new(list_items)
-            .block(sources)
+            .block(accounts)
             .highlight_symbol(">")
             .scroll_padding(2)
             .highlight_style(active_style)

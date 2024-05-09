@@ -1,7 +1,14 @@
-use std::{io::{self, Stdout}, time::Duration};
+use std::{
+    io::{self, Stdout},
+    time::Duration,
+};
 
 use anyhow::Result;
-use crossterm::{event::{DisableMouseCapture, EnableMouseCapture, Event, EventStream}, execute, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}};
+use crossterm::{
+    event::{DisableMouseCapture, EnableMouseCapture, Event, EventStream},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+};
 use futures::StreamExt;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
@@ -11,24 +18,23 @@ use crate::{action::Action, state::state::AppState, ui::component::Component};
 use super::dashboard::Dashboard;
 
 pub struct Ui {
-    pub tx: UnboundedSender<Action>
+    pub tx: UnboundedSender<Action>,
 }
 
 impl Ui {
     pub fn new() -> (Self, UnboundedReceiver<Action>) {
         let (tx, rx) = mpsc::unbounded_channel();
-        (Self {tx}, rx)
+        (Self { tx }, rx)
     }
 
     pub async fn start(self, mut state_rx: UnboundedReceiver<AppState>) -> Result<()> {
-
         let mut dash = {
             let state = state_rx.recv().await.unwrap();
 
             Dashboard::new(&state, self.tx.clone())
         };
-        
-        let mut terminal = setup_terminal()?; 
+
+        let mut terminal = setup_terminal()?;
 
         // need to loop and react to state_rx messages and pass it to app
         // need to setup crossterm events and collect them
@@ -62,9 +68,9 @@ impl Ui {
                 }
             }
 
-            if let Err(e) = terminal.draw(|frame| dash.render(frame, frame.size(),())) {
+            if let Err(e) = terminal.draw(|frame| dash.render(frame, frame.size(), None)) {
                 println!("error during drawing");
-                return Err(e.into())
+                return Err(e.into());
             }
         };
 
@@ -94,3 +100,4 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result
 
     Ok(terminal.show_cursor()?)
 }
+

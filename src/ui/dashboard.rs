@@ -11,7 +11,12 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{action::Action, state::state::AppState};
 
-use super::{accounts::Accounts, component::Component, explorer::Explorer, sources::Sources};
+use super::{
+    accounts::Accounts,
+    component::{Component, ComponentProps},
+    explorer::Explorer,
+    sources::Sources,
+};
 
 pub struct Dashboard {
     selected_component: DashboardComponents,
@@ -61,7 +66,7 @@ impl Dashboard {
 }
 
 impl Component for Dashboard {
-    fn render(&mut self, f: &mut ratatui::prelude::Frame, area: Rect, props: ()) {
+    fn render(&mut self, f: &mut ratatui::prelude::Frame, area: Rect, _: Option<ComponentProps>) {
         let [aside, main] = *Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(30), Constraint::Percentage(70)])
@@ -76,9 +81,27 @@ impl Component for Dashboard {
         else {
             panic!("aside should have 2 nested chunks")
         };
-        self.sources.render(f, sources, props);
-        self.accounts.render(f, accounts, props);
-        self.explorer.render(f, main, props);
+        self.sources.render(
+            f,
+            sources,
+            Some(ComponentProps {
+                selected: matches!(self.selected_component, DashboardComponents::Sources),
+            }),
+        );
+        self.accounts.render(
+            f,
+            accounts,
+            Some(ComponentProps {
+                selected: matches!(self.selected_component, DashboardComponents::Accounts),
+            }),
+        );
+        self.explorer.render(
+            f,
+            main,
+            Some(ComponentProps {
+                selected: matches!(self.selected_component, DashboardComponents::Explorer),
+            }),
+        );
     }
 
     fn handle_key_events(&mut self, key: KeyEvent) {
