@@ -24,7 +24,7 @@ pub struct Dashboard<'a> {
     selected_component: DashboardComponents,
     sources: Sources<'a>,
     accounts: Accounts<'a>,
-    explorer: Box<dyn Component>,
+    explorer: Explorer<'a>,
     ui_tx: UnboundedSender<Action>,
 }
 
@@ -36,18 +36,24 @@ enum DashboardComponents {
 
 impl Dashboard<'_> {
     pub fn new(state: &AppState, ui_tx: UnboundedSender<Action>) -> Self {
-        let sources = Sources::new(vec![
-            "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
-            "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
-            "test1", "test2", "test3", "test1", "test2", "test3",
-        ]);
-        let accounts = Accounts::new(vec![
-            "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
-            "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
-            "test1", "test2", "test3", "test1", "test2", "test3",
-        ]);
+        let sources = Sources::new(
+            vec![
+                "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
+                "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
+                "test1", "test2", "test3", "test1", "test2", "test3",
+            ],
+            ui_tx.clone(),
+        );
+        let accounts = Accounts::new(
+            vec![
+                "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
+                "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
+                "test1", "test2", "test3", "test1", "test2", "test3",
+            ],
+            ui_tx.clone(),
+        );
 
-        let explorer = Box::new(Explorer::new(ui_tx.clone()));
+        let explorer = Explorer::new(ui_tx.clone());
         Self {
             selected_component: DashboardComponents::Sources,
             sources,
@@ -114,8 +120,8 @@ impl Component for Dashboard<'_> {
                 self.change_selected_component()
             }
             _ => match self.selected_component {
-                DashboardComponents::Sources => self.sources.component.handle_key_events(key),
-                DashboardComponents::Accounts => self.accounts.component.handle_key_events(key),
+                DashboardComponents::Sources => self.sources.handle_key_events(key),
+                DashboardComponents::Accounts => self.accounts.handle_key_events(key),
                 DashboardComponents::Explorer => self.explorer.handle_key_events(key),
             },
         }

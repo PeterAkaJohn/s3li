@@ -1,16 +1,22 @@
+use tokio::sync::mpsc::UnboundedSender;
+
+use crate::action::Action;
+
 use super::{
     component::{Component, ComponentProps},
     list::ListComponent,
 };
 
 pub struct Accounts<'a> {
-    pub component: ListComponent<'a, &'a str>,
+    component: ListComponent<'a, &'a str>,
+    ui_tx: UnboundedSender<Action>,
 }
 
 impl<'a> Accounts<'a> {
-    pub fn new(items: Vec<&'a str>) -> Accounts<'a> {
+    pub fn new(items: Vec<&'a str>, ui_tx: UnboundedSender<Action>) -> Accounts<'a> {
         Accounts {
             component: ListComponent::new("Accounts", items),
+            ui_tx,
         }
     }
     pub fn render(
@@ -20,5 +26,8 @@ impl<'a> Accounts<'a> {
         props: Option<ComponentProps>,
     ) {
         self.component.render(f, area, props)
+    }
+    pub fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
+        self.component.handle_key_events(key)
     }
 }

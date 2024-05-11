@@ -5,7 +5,7 @@ use ratatui::{
     widgets::{block::Title, Block, Borders, List, ListItem, ListState, Padding},
 };
 
-use super::component::{Component, ComponentProps};
+use super::component::{Component, ComponentProps, WithContainer};
 
 pub trait WithList {
     fn get_list_items_len(&self) -> usize;
@@ -76,23 +76,6 @@ impl WithList for ListComponent<'_, &str> {
     }
 }
 
-pub trait WithContainer<'a> {
-    fn with_container(&self, container_title: &'a str, props: Option<ComponentProps>) -> Block<'a>
-    where
-        Self: Sized,
-    {
-        let box_style = match props {
-            Some(ComponentProps { selected: true }) => Style::default().light_green(),
-            _ => Style::default(),
-        };
-        Block::default()
-            .borders(Borders::ALL)
-            .border_style(box_style)
-            .padding(Padding::horizontal(1))
-            .title(Title::default().content(container_title))
-    }
-}
-
 impl WithContainer<'_> for ListComponent<'_, &str> {}
 
 impl Component for ListComponent<'_, &str> {
@@ -103,7 +86,7 @@ impl Component for ListComponent<'_, &str> {
         props: Option<ComponentProps>,
     ) {
         let container = self.with_container(self.title, props);
-        let active_style = Style::default().fg(Color::LightGreen).bg(Color::LightBlue);
+        let active_style = Style::default().fg(Color::Green).bg(Color::LightBlue);
         let default_style = Style::default().fg(Color::White);
         let list_items = self
             .items

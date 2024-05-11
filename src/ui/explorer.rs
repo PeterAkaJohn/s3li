@@ -10,13 +10,14 @@ use crate::action::Action;
 
 use super::{
     component::{Component, ComponentProps},
-    list::WithContainer,
+    simple::SimpleComponent,
 };
 
 #[derive(Debug)]
 pub struct Explorer<'a> {
     selected_file: Option<&'a str>,
     ui_tx: UnboundedSender<Action>,
+    component: SimpleComponent<'a>,
 }
 
 impl<'a> Explorer<'a> {
@@ -24,30 +25,22 @@ impl<'a> Explorer<'a> {
         Self {
             selected_file: None,
             ui_tx,
+            component: SimpleComponent::new("Explorer"),
         }
     }
 }
 
-impl WithContainer<'_> for Explorer<'_> {}
-
-impl Component for Explorer<'_> {
-    fn render(
+impl Explorer<'_> {
+    pub fn render(
         &mut self,
         f: &mut ratatui::prelude::Frame,
         area: ratatui::prelude::Rect,
         props: Option<ComponentProps>,
     ) {
-        let explorer = self.with_container("Explorer", props);
-
-        f.render_widget(explorer, area);
+        self.component.render(f, area, props)
     }
 
-    fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
-        if key.kind != KeyEventKind::Press {
-            return;
-        }
-        match key.code {
-            _ => {}
-        };
+    pub fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
+        self.component.handle_key_events(key)
     }
 }
