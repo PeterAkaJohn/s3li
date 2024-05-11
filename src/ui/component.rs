@@ -35,15 +35,3 @@ pub trait Component {
     //   }
     fn render(&mut self, f: &mut Frame, area: Rect, props: Option<ComponentProps>);
 }
-
-pub fn get_block_container(container_title: &str, props: Option<ComponentProps>) -> Block {
-    let box_style = match props {
-        Some(ComponentProps { selected: true }) => Style::default().light_green(),
-        _ => Style::default(),
-    };
-    Block::default()
-        .borders(Borders::ALL)
-        .border_style(box_style)
-        .padding(Padding::horizontal(1))
-        .title(Title::default().content(container_title))
-}

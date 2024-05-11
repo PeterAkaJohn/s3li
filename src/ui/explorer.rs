@@ -8,7 +8,10 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::action::Action;
 
-use super::component::{get_block_container, Component, ComponentProps};
+use super::{
+    component::{Component, ComponentProps},
+    list::WithContainer,
+};
 
 #[derive(Debug)]
 pub struct Explorer<'a> {
@@ -25,6 +28,8 @@ impl<'a> Explorer<'a> {
     }
 }
 
+impl WithContainer<'_> for Explorer<'_> {}
+
 impl Component for Explorer<'_> {
     fn render(
         &mut self,
@@ -32,7 +37,7 @@ impl Component for Explorer<'_> {
         area: ratatui::prelude::Rect,
         props: Option<ComponentProps>,
     ) {
-        let explorer = get_block_container("Explorer", props);
+        let explorer = self.with_container("Explorer", props);
 
         f.render_widget(explorer, area);
     }

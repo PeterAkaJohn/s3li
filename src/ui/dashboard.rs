@@ -12,16 +12,18 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::{action::Action, state::state::AppState};
 
 use super::{
+    // accounts::Accounts,
     accounts::Accounts,
     component::{Component, ComponentProps},
     explorer::Explorer,
-    sources::Sources,
+    list::ListComponent,
+    sources::Sources, // sources::Sources,
 };
 
-pub struct Dashboard {
+pub struct Dashboard<'a> {
     selected_component: DashboardComponents,
-    sources: Box<dyn Component>,
-    accounts: Box<dyn Component>,
+    sources: Sources<'a>,
+    accounts: Accounts<'a>,
     explorer: Box<dyn Component>,
     ui_tx: UnboundedSender<Action>,
 }
@@ -32,17 +34,19 @@ enum DashboardComponents {
     Explorer,
 }
 
-impl Dashboard {
+impl Dashboard<'_> {
     pub fn new(state: &AppState, ui_tx: UnboundedSender<Action>) -> Self {
-        let sources = Box::new(Sources::new(
-            vec![
-                "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
-                "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
-                "test1", "test2", "test3", "test1", "test2", "test3",
-            ],
-            ui_tx.clone(),
-        ));
-        let accounts = Box::new(Accounts::new(vec!["account1", "account2"], ui_tx.clone()));
+        let sources = Sources::new(vec![
+            "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
+            "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
+            "test1", "test2", "test3", "test1", "test2", "test3",
+        ]);
+        let accounts = Accounts::new(vec![
+            "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
+            "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
+            "test1", "test2", "test3", "test1", "test2", "test3",
+        ]);
+
         let explorer = Box::new(Explorer::new(ui_tx.clone()));
         Self {
             selected_component: DashboardComponents::Sources,
@@ -65,7 +69,7 @@ impl Dashboard {
     }
 }
 
-impl Component for Dashboard {
+impl Component for Dashboard<'_> {
     fn render(&mut self, f: &mut ratatui::prelude::Frame, area: Rect, _: Option<ComponentProps>) {
         let [aside, main] = *Layout::default()
             .direction(Direction::Horizontal)
@@ -110,8 +114,8 @@ impl Component for Dashboard {
                 self.change_selected_component()
             }
             _ => match self.selected_component {
-                DashboardComponents::Sources => self.sources.handle_key_events(key),
-                DashboardComponents::Accounts => self.accounts.handle_key_events(key),
+                DashboardComponents::Sources => self.sources.component.handle_key_events(key),
+                DashboardComponents::Accounts => self.accounts.component.handle_key_events(key),
                 DashboardComponents::Explorer => self.explorer.handle_key_events(key),
             },
         }
