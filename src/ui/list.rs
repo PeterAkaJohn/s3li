@@ -1,9 +1,10 @@
 use crossterm::event::KeyEventKind;
 use ratatui::{
+    layout::{Constraint, Direction, Layout},
     style::{Color, Style, Stylize},
     text::{Line, Span},
     widgets::{
-        block::Title, Block, Borders, List, ListItem, ListState, Padding, Scrollbar,
+        block::Title, Block, Borders, List, ListItem, ListState, Padding, Paragraph, Scrollbar,
         ScrollbarOrientation, ScrollbarState,
     },
 };
@@ -88,27 +89,42 @@ impl Component for ListComponent<'_, &str> {
         area: ratatui::prelude::Rect,
         props: Option<ComponentProps>,
     ) {
-        let container = self.with_container(self.title, props);
-        let active_style = Style::default().fg(Color::Green).bg(Color::LightBlue);
-        let default_style = Style::default().fg(Color::White);
-        let list_items = self
-            .items
-            .iter()
-            .map(|key| {
-                ListItem::new(Line::from(Span::styled(
-                    format!("{: <25}", key),
-                    default_style,
-                )))
-            })
-            .collect::<Vec<ListItem>>();
+        let container = self.with_container(self.title, &props);
+        if let Some(ComponentProps { selected: false }) = props {
+            let layout = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([
+                    Constraint::Percentage((100 - 20) / 2),
+                    Constraint::Percentage(20),
+                    Constraint::Percentage((100 - 20) / 2),
+                ])
+                .split(container.inner(area));
 
-        let list = List::new(list_items)
-            .block(container)
-            .scroll_padding(2)
-            .highlight_style(active_style)
-            .highlight_spacing(ratatui::widgets::HighlightSpacing::Always);
+            let content = Paragraph::new(self.title).alignment(ratatui::layout::Alignment::Center);
+            f.render_widget(container, area);
+            f.render_widget(content, layout[1]);
+        } else {
+            let active_style = Style::default().fg(Color::Green).bg(Color::LightBlue);
+            let default_style = Style::default().fg(Color::White);
+            let list_items = self
+                .items
+                .iter()
+                .map(|key| {
+                    ListItem::new(Line::from(Span::styled(
+                        format!("{: <25}", key),
+                        default_style,
+                    )))
+                })
+                .collect::<Vec<ListItem>>();
 
-        f.render_stateful_widget(list, area, &mut self.list_state);
+            let list = List::new(list_items)
+                .block(container)
+                .scroll_padding(2)
+                .highlight_style(active_style)
+                .highlight_spacing(ratatui::widgets::HighlightSpacing::Always);
+
+            f.render_stateful_widget(list, area, &mut self.list_state);
+        }
     }
 
     fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {

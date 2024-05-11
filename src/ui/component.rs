@@ -36,18 +36,18 @@ pub trait Component {
     fn render(&mut self, f: &mut Frame, area: Rect, props: Option<ComponentProps>);
 }
 pub trait WithContainer<'a> {
-    fn with_container(&self, container_title: &'a str, props: Option<ComponentProps>) -> Block<'a>
+    fn with_container(&self, container_title: &'a str, props: &Option<ComponentProps>) -> Block<'a>
     where
         Self: Sized,
     {
-        let box_style = match props {
-            Some(ComponentProps { selected: true }) => Style::default().green(),
-            _ => Style::default(),
-        };
-        Block::default()
+        let container = Block::default()
             .borders(Borders::ALL)
-            .border_style(box_style)
-            .padding(Padding::horizontal(1))
-            .title(Title::default().content(container_title))
+            .padding(Padding::horizontal(1));
+        match props {
+            Some(ComponentProps { selected: true }) => container
+                .border_style(Style::default().green())
+                .title(Title::default().content(container_title)),
+            _ => container.border_style(Style::default()),
+        }
     }
 }

@@ -61,18 +61,18 @@ impl Dashboard<'_> {
             accounts,
             explorer,
             ui_tx,
-            aside_constraints: [Constraint::Fill(1), Constraint::Length(4)],
+            aside_constraints: [Constraint::Fill(1), Constraint::Length(3)],
         }
     }
     fn change_selected_component(&mut self) {
         match self.selected_component {
             DashboardComponents::Sources => {
                 self.selected_component = DashboardComponents::Accounts;
-                self.aside_constraints = [Constraint::Length(4), Constraint::Fill(1)]
+                self.aside_constraints = [Constraint::Length(3), Constraint::Fill(1)]
             }
             DashboardComponents::Accounts => {
                 self.selected_component = DashboardComponents::Sources;
-                self.aside_constraints = [Constraint::Fill(1), Constraint::Length(4)]
+                self.aside_constraints = [Constraint::Fill(1), Constraint::Length(3)]
             }
             _ => {}
         }

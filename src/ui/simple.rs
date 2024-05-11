@@ -19,7 +19,7 @@ impl Component for SimpleComponent<'_> {
         area: ratatui::prelude::Rect,
         props: Option<ComponentProps>,
     ) {
-        let explorer = self.with_container(self.container_title, props);
+        let explorer = self.with_container(self.container_title, &props);
         f.render_widget(explorer, area);
     }
 
