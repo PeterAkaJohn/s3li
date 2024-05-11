@@ -26,6 +26,7 @@ pub struct Dashboard<'a> {
     accounts: Accounts<'a>,
     explorer: Explorer<'a>,
     ui_tx: UnboundedSender<Action>,
+    aside_constraints: [Constraint; 2],
 }
 
 enum DashboardComponents {
@@ -60,15 +61,18 @@ impl Dashboard<'_> {
             accounts,
             explorer,
             ui_tx,
+            aside_constraints: [Constraint::Fill(1), Constraint::Length(4)],
         }
     }
     fn change_selected_component(&mut self) {
         match self.selected_component {
             DashboardComponents::Sources => {
                 self.selected_component = DashboardComponents::Accounts;
+                self.aside_constraints = [Constraint::Length(4), Constraint::Fill(1)]
             }
             DashboardComponents::Accounts => {
                 self.selected_component = DashboardComponents::Sources;
+                self.aside_constraints = [Constraint::Fill(1), Constraint::Length(4)]
             }
             _ => {}
         }
@@ -86,7 +90,7 @@ impl Component for Dashboard<'_> {
         };
         let [sources, accounts] = *Layout::default()
             .direction(Direction::Vertical)
-            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+            .constraints(self.aside_constraints)
             .split(aside)
         else {
             panic!("aside should have 2 nested chunks")

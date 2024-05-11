@@ -2,7 +2,10 @@ use crossterm::event::KeyEventKind;
 use ratatui::{
     style::{Color, Style, Stylize},
     text::{Line, Span},
-    widgets::{block::Title, Block, Borders, List, ListItem, ListState, Padding},
+    widgets::{
+        block::Title, Block, Borders, List, ListItem, ListState, Padding, Scrollbar,
+        ScrollbarOrientation, ScrollbarState,
+    },
 };
 
 use super::component::{Component, ComponentProps, WithContainer};
