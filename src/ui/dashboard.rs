@@ -1,11 +1,8 @@
 use core::panic;
 
-use crossterm::event::{KeyEvent, KeyEventKind};
+use crossterm::event::{KeyEvent};
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Style},
-    text::{Line, Span},
-    widgets::{block::Title, Block, Borders, List, ListItem, Padding},
 };
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -16,7 +13,6 @@ use super::{
     accounts::Accounts,
     component::{Component, ComponentProps},
     explorer::Explorer,
-    list::ListComponent,
     sources::Sources, // sources::Sources,
 };
 
@@ -36,7 +32,7 @@ enum DashboardComponents {
 }
 
 impl Dashboard<'_> {
-    pub fn new(state: &AppState, ui_tx: UnboundedSender<Action>) -> Self {
+    pub fn new(_state: &AppState, ui_tx: UnboundedSender<Action>) -> Self {
         let sources = Sources::new(
             vec![
                 "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
@@ -80,7 +76,7 @@ impl Dashboard<'_> {
 }
 
 impl Component for Dashboard<'_> {
-    fn render(&mut self, f: &mut ratatui::prelude::Frame, area: Rect, _: Option<ComponentProps>) {
+    fn render(&mut self, f: &mut ratatui::prelude::Frame, _area: Rect, _: Option<ComponentProps>) {
         let [aside, main] = *Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(30), Constraint::Percentage(70)])

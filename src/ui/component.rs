@@ -1,5 +1,5 @@
 use anyhow::Result;
-use crossterm::event::{KeyEvent, KeyEventKind};
+use crossterm::event::{KeyEvent};
 use ratatui::{
     layout::Rect,
     style::{Style, Stylize},

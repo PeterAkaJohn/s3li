@@ -1,9 +1,5 @@
-use crossterm::event::KeyEventKind;
-use ratatui::{
-    style::{Color, Style},
-    text::{Line, Span},
-    widgets::{block::Title, Block, Borders, List, ListItem, ListState, Padding},
-};
+
+
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::action::Action;

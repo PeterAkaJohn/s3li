@@ -49,7 +49,7 @@ impl Ui {
                     // println!("ticking");
                     ()
                 },
-                Some(state) = state_rx.recv() => {
+                Some(_state) = state_rx.recv() => {
                     // println!("{:?}", state);
                     // println!("received appstate from state, rendering...");
                 },
