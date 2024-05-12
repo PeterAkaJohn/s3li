@@ -1,12 +1,9 @@
 use crossterm::event::KeyEventKind;
 use ratatui::{
     layout::{Constraint, Direction, Layout},
-    style::{Color, Style, Stylize},
+    style::{Color, Style},
     text::{Line, Span},
-    widgets::{
-        block::Title, Block, Borders, List, ListItem, ListState, Padding, Paragraph, Scrollbar,
-        ScrollbarOrientation, ScrollbarState,
-    },
+    widgets::{List, ListItem, ListState, Paragraph},
 };
 
 use super::component::{Component, ComponentProps, WithContainer};
@@ -54,6 +51,7 @@ pub struct ListComponent<'a, T> {
     list_state: ListState,
     items: Vec<T>,
     title: &'a str,
+    selected_idx: Option<usize>,
 }
 
 impl<'a> ListComponent<'a, &str> {
@@ -62,6 +60,7 @@ impl<'a> ListComponent<'a, &str> {
             list_state: ListState::default(),
             items,
             title,
+            selected_idx: None,
         }
     }
 }
@@ -77,6 +76,7 @@ impl WithList for ListComponent<'_, &str> {
 
     fn set_selected(&mut self, idx: Option<usize>) {
         self.list_state.select(idx);
+        self.selected_idx = idx;
     }
 }
 
@@ -89,6 +89,11 @@ impl Component for ListComponent<'_, &str> {
         area: ratatui::prelude::Rect,
         props: Option<ComponentProps>,
     ) {
+        let selected_item = if let Some(selected_idx) = self.selected_idx {
+            self.items.get(selected_idx)
+        } else {
+            None
+        };
         let container = self.with_container(self.title, &props);
         if let Some(ComponentProps { selected: false }) = props {
             let layout = Layout::default()
@@ -100,7 +105,13 @@ impl Component for ListComponent<'_, &str> {
                 ])
                 .split(container.inner(area));
 
-            let content = Paragraph::new(self.title).alignment(ratatui::layout::Alignment::Center);
+            let title = if let Some(item) = selected_item {
+                format!("{} ({})", self.title, item)
+            } else {
+                self.title.to_string()
+            };
+
+            let content = Paragraph::new(title).alignment(ratatui::layout::Alignment::Center);
             f.render_widget(container, area);
             f.render_widget(content, layout[1]);
         } else {
