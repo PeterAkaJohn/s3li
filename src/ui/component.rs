@@ -1,5 +1,5 @@
 use anyhow::Result;
-use crossterm::event::{KeyEvent};
+use crossterm::event::KeyEvent;
 use ratatui::{
     layout::Rect,
     style::{Style, Stylize},
@@ -42,10 +42,12 @@ pub trait WithContainer<'a> {
     {
         let container = Block::default()
             .borders(Borders::ALL)
+            .border_type(ratatui::widgets::BorderType::Rounded)
             .padding(Padding::horizontal(1));
         match props {
             Some(ComponentProps { selected: true }) => container
                 .border_style(Style::default().green())
+                .title_alignment(ratatui::layout::Alignment::Center)
                 .title(Title::default().content(container_title)),
             _ => container.border_style(Style::default()),
         }

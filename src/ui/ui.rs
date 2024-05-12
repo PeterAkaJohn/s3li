@@ -100,4 +100,3 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result
 
     Ok(terminal.show_cursor()?)
 }
-

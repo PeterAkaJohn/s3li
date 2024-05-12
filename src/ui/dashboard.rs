@@ -1,9 +1,7 @@
 use core::panic;
 
-use crossterm::event::{KeyEvent};
-use ratatui::{
-    layout::{Constraint, Direction, Layout, Rect},
-};
+use crossterm::event::KeyEvent;
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{action::Action, state::state::AppState};
@@ -79,7 +77,7 @@ impl Component for Dashboard<'_> {
     fn render(&mut self, f: &mut ratatui::prelude::Frame, _area: Rect, _: Option<ComponentProps>) {
         let [aside, main] = *Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(30), Constraint::Percentage(70)])
+            .constraints([Constraint::Percentage(15), Constraint::Percentage(85)])
             .split(f.size())
         else {
             panic!("layout needs to have 2 chunks")
