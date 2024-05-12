@@ -149,10 +149,10 @@ impl Component for ListComponent<'_, &str> {
             crossterm::event::KeyCode::Esc => {
                 self.unselect();
             }
-            crossterm::event::KeyCode::Up => {
+            crossterm::event::KeyCode::Up | crossterm::event::KeyCode::Char('k') => {
                 self.select_previous();
             }
-            crossterm::event::KeyCode::Down => {
+            crossterm::event::KeyCode::Down | crossterm::event::KeyCode::Char('j') => {
                 self.select_next();
             }
             _ => {}

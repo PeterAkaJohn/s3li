@@ -120,9 +120,10 @@ impl Component for Dashboard<'_> {
 
     fn handle_key_events(&mut self, key: KeyEvent) {
         match key.code {
-            crossterm::event::KeyCode::Left | crossterm::event::KeyCode::Right => {
-                self.change_selected_component()
-            }
+            crossterm::event::KeyCode::Left
+            | crossterm::event::KeyCode::Right
+            | crossterm::event::KeyCode::Char('h')
+            | crossterm::event::KeyCode::Char('l') => self.change_selected_component(),
             _ => match self.selected_component {
                 DashboardComponents::Sources => self.sources.handle_key_events(key),
                 DashboardComponents::Accounts => self.accounts.handle_key_events(key),
