@@ -28,6 +28,11 @@ impl<'a> Sources<'a> {
         self.component.render(f, area, props)
     }
     pub fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
-        self.component.handle_key_events(key)
+        self.component.handle_key_events(key);
+        if let crossterm::event::KeyCode::Enter = key.code {
+            if let Some(idx) = self.component.get_active_idx() {
+                self.ui_tx.send(Action::SetSource(idx));
+            }
+        };
     }
 }

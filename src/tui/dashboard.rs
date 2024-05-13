@@ -4,7 +4,7 @@ use crossterm::event::KeyEvent;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use tokio::sync::mpsc::UnboundedSender;
 
-use crate::{action::Action, state::state::AppState};
+use crate::{action::Action, store::state::AppState};
 
 use super::{
     // accounts::Accounts,

@@ -1,8 +1,10 @@
-
 #[derive(Debug)]
 pub enum Action {
     Quit,
     Tick,
     Render,
-    Key(String)
+    Key(String),
+    SetSource(usize),
+    SetAccount(usize),
 }
+

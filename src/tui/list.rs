@@ -154,6 +154,7 @@ impl Component for ListComponent<'_, &str> {
         match key.code {
             crossterm::event::KeyCode::Esc => {
                 self.unselect();
+                self.set_active_idx(None);
             }
             crossterm::event::KeyCode::Up | crossterm::event::KeyCode::Char('k') => {
                 self.select_previous();
