@@ -13,10 +13,16 @@ struct Accounts {
     available_accounts: Vec<String>,
     active_idx: Option<usize>,
 }
+#[derive(Debug, Default, Clone)]
+struct Explorer {
+    files: Vec<String>,
+}
 
 #[derive(Debug, Default, Clone)]
 pub struct AppState {
     sources: Sources,
+    accounts: Accounts,
+    explorer: Explorer,
 }
 
 pub struct State {
@@ -54,7 +60,7 @@ impl State {
                             // unauthenticated errors
                         },
                         Action::SetAccount(account_idx) => {
-                            self.app_state.sources.active_idx = Some(account_idx);
+                            self.app_state.accounts.active_idx = Some(account_idx);
                             // should recreate aws client with new selected account
                         },
                     }
@@ -63,4 +69,3 @@ impl State {
         }
     }
 }
-
