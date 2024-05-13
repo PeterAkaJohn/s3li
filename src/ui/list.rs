@@ -76,7 +76,6 @@ impl WithList for ListComponent<'_, &str> {
 
     fn set_selected(&mut self, idx: Option<usize>) {
         self.list_state.select(idx);
-        self.selected_idx = idx;
     }
 }
 
@@ -154,6 +153,9 @@ impl Component for ListComponent<'_, &str> {
             }
             crossterm::event::KeyCode::Down | crossterm::event::KeyCode::Char('j') => {
                 self.select_next();
+            }
+            crossterm::event::KeyCode::Enter => {
+                self.selected_idx = self.list_state.selected();
             }
             _ => {}
         };
