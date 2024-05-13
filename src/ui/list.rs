@@ -51,7 +51,7 @@ pub struct ListComponent<'a, T> {
     list_state: ListState,
     items: Vec<T>,
     title: &'a str,
-    selected_idx: Option<usize>,
+    active_idx: Option<usize>,
 }
 
 impl<'a> ListComponent<'a, &str> {
@@ -60,8 +60,15 @@ impl<'a> ListComponent<'a, &str> {
             list_state: ListState::default(),
             items,
             title,
-            selected_idx: None,
+            active_idx: None,
         }
+    }
+    pub fn set_active_idx(&mut self, active_idx: Option<usize>) {
+        self.active_idx = active_idx;
+    }
+
+    pub fn get_active_idx(&self) -> Option<usize> {
+        self.active_idx
     }
 }
 
@@ -88,7 +95,7 @@ impl Component for ListComponent<'_, &str> {
         area: ratatui::prelude::Rect,
         props: Option<ComponentProps>,
     ) {
-        let selected_item = if let Some(selected_idx) = self.selected_idx {
+        let selected_item = if let Some(selected_idx) = self.active_idx {
             self.items.get(selected_idx)
         } else {
             None
@@ -155,7 +162,7 @@ impl Component for ListComponent<'_, &str> {
                 self.select_next();
             }
             crossterm::event::KeyCode::Enter => {
-                self.selected_idx = self.list_state.selected();
+                self.set_active_idx(self.get_list_state_selected());
             }
             _ => {}
         };
