@@ -29,22 +29,24 @@ enum DashboardComponents {
     Explorer,
 }
 
-impl Dashboard<'_> {
-    pub fn new(_state: &AppState, ui_tx: UnboundedSender<Action>) -> Self {
+impl<'a> Dashboard<'a> {
+    pub fn new(state: &'a AppState, ui_tx: UnboundedSender<Action>) -> Self {
         let sources = Sources::new(
-            vec![
-                "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
-                "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
-                "test1", "test2", "test3", "test1", "test2", "test3",
-            ],
+            state
+                .sources
+                .available_sources
+                .iter()
+                .map(|val| val.as_str())
+                .collect(),
             ui_tx.clone(),
         );
         let accounts = Accounts::new(
-            vec![
-                "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
-                "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
-                "test1", "test2", "test3", "test1", "test2", "test3",
-            ],
+            state
+                .accounts
+                .available_accounts
+                .iter()
+                .map(|val| val.as_str())
+                .collect(),
             ui_tx.clone(),
         );
 

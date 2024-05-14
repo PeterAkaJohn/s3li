@@ -28,11 +28,8 @@ impl Ui {
     }
 
     pub async fn start(self, mut state_rx: UnboundedReceiver<AppState>) -> Result<()> {
-        let mut dash = {
-            let state = state_rx.recv().await.unwrap();
-
-            Dashboard::new(&state, self.tx.clone())
-        };
+        let state = state_rx.recv().await.unwrap();
+        let mut dash = { Dashboard::new(&state, self.tx.clone()) };
 
         let mut terminal = setup_terminal()?;
 

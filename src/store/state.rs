@@ -4,25 +4,25 @@ use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use crate::action::Action;
 
 #[derive(Debug, Default, Clone)]
-struct Sources {
-    available_sources: Vec<String>,
-    active_idx: Option<usize>,
+pub struct Sources {
+    pub available_sources: Vec<String>,
+    pub active_idx: Option<usize>,
 }
 #[derive(Debug, Default, Clone)]
-struct Accounts {
-    available_accounts: Vec<String>,
-    active_idx: Option<usize>,
+pub struct Accounts {
+    pub available_accounts: Vec<String>,
+    pub active_idx: Option<usize>,
 }
 #[derive(Debug, Default, Clone)]
-struct Explorer {
-    files: Vec<String>,
+pub struct Explorer {
+    pub files: Vec<String>,
 }
 
 #[derive(Debug, Default, Clone)]
 pub struct AppState {
-    sources: Sources,
-    accounts: Accounts,
-    explorer: Explorer,
+    pub sources: Sources,
+    pub accounts: Accounts,
+    pub explorer: Explorer,
 }
 
 pub struct State {
@@ -33,13 +33,32 @@ pub struct State {
 impl State {
     pub fn new() -> (Self, UnboundedReceiver<AppState>) {
         let (tx, rx) = mpsc::unbounded_channel();
-        (
-            Self {
-                tx,
-                app_state: AppState::default(),
+        let app_state = AppState {
+            sources: Sources {
+                available_sources: vec![
+                    "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2",
+                    "test3", "test1", "test2", "test3", "test1", "test2", "test3", "test1",
+                    "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
+                ]
+                .iter()
+                .map(|val| val.to_string())
+                .collect(),
+                active_idx: None,
             },
-            rx,
-        )
+            explorer: Explorer { files: vec![] },
+            accounts: Accounts {
+                active_idx: None,
+                available_accounts: vec![
+                    "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2",
+                    "test3", "test1", "test2", "test3", "test1", "test2", "test3", "test1",
+                    "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
+                ]
+                .iter()
+                .map(|val| val.to_string())
+                .collect(),
+            },
+        };
+        (Self { tx, app_state }, rx)
     }
 
     pub async fn start(&mut self, mut ui_rx: UnboundedReceiver<Action>) -> Result<()> {
