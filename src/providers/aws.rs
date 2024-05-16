@@ -55,7 +55,10 @@ impl AwsClient {
         };
         let credentials_file = ini!(safe credentials_path);
         match credentials_file {
-            Ok(credentials_file) => credentials_file.keys().map(|key| key.to_string()).collect(),
+            Ok(credentials_file) => credentials_file
+                .keys()
+                .map(|key| key.to_string())
+                .collect::<Vec<String>>(),
             Err(_) => {
                 panic!("Credentials file does not exists")
             }

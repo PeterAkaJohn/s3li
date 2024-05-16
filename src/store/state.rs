@@ -35,7 +35,8 @@ impl State {
     pub async fn new() -> (Self, UnboundedReceiver<AppState>) {
         let (tx, rx) = mpsc::unbounded_channel();
         let client = AwsClient::new().await;
-        let accounts = AwsClient::list_accounts();
+        let mut accounts = AwsClient::list_accounts();
+        accounts.sort();
         let app_state = AppState {
             sources: Sources {
                 available_sources: vec![
