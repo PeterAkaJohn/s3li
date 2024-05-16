@@ -1,7 +1,7 @@
 use anyhow::Result;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 
-use crate::action::Action;
+use crate::{action::Action, providers::AwsClient};
 
 #[derive(Debug, Default, Clone)]
 pub struct Sources {
@@ -28,11 +28,14 @@ pub struct AppState {
 pub struct State {
     pub app_state: AppState,
     pub tx: UnboundedSender<AppState>,
+    client: AwsClient,
 }
 
 impl State {
-    pub fn new() -> (Self, UnboundedReceiver<AppState>) {
+    pub async fn new() -> (Self, UnboundedReceiver<AppState>) {
         let (tx, rx) = mpsc::unbounded_channel();
+        let client = AwsClient::new().await;
+        let accounts = AwsClient::list_accounts();
         let app_state = AppState {
             sources: Sources {
                 available_sources: vec![
@@ -48,17 +51,17 @@ impl State {
             explorer: Explorer { files: vec![] },
             accounts: Accounts {
                 active_idx: None,
-                available_accounts: vec![
-                    "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2",
-                    "test3", "test1", "test2", "test3", "test1", "test2", "test3", "test1",
-                    "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
-                ]
-                .iter()
-                .map(|val| val.to_string())
-                .collect(),
+                available_accounts: accounts,
             },
         };
-        (Self { tx, app_state }, rx)
+        (
+            Self {
+                tx,
+                app_state,
+                client,
+            },
+            rx,
+        )
     }
 
     pub async fn start(&mut self, mut ui_rx: UnboundedReceiver<Action>) -> Result<()> {
