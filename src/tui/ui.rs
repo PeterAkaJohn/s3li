@@ -3,7 +3,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture, Event, EventStream},
     execute,
@@ -29,7 +29,8 @@ impl Ui {
 
     pub async fn start(self, mut state_rx: UnboundedReceiver<AppState>) -> Result<()> {
         let state = state_rx.recv().await.unwrap();
-        let mut dash = { Dashboard::new(&state, self.tx.clone()) };
+        let mut state_clone = state.clone();
+        let mut dash = Dashboard::new(&state_clone, self.tx.clone());
 
         let mut terminal = setup_terminal()?;
 
@@ -40,15 +41,11 @@ impl Ui {
         // need also a tick for some reason
         let mut ticker = tokio::time::interval(Duration::from_millis(250));
 
-        let result = loop {
+        let result: Result<()> = loop {
             tokio::select! {
                 _ = ticker.tick() => {
                     // println!("ticking");
                     ()
-                },
-                Some(_state) = state_rx.recv() => {
-                    // println!("{:?}", state);
-                    // println!("received appstate from state, rendering...");
                 },
                 maybe_events = term_events.next() => {
                     match maybe_events {
@@ -56,23 +53,32 @@ impl Ui {
                             // println!("received event from terminal, sending to ui, possible rerendering {:?}", event);
                             if event.code == crossterm::event::KeyCode::Char('q') {
                                 self.tx.send(Action::Quit)?;
-                                break;
+                                break Ok(());
                             }
                             dash.handle_key_events(event);
                         }
-                        _ => ()
+                        _ => break Ok(())
                     }
-                }
+                },
+                Some(updated_state) = state_rx.recv() => {
+                    // println!("{:?}", state);
+                    // println!("received appstate from state, rendering...");
+                    state_clone = updated_state.clone();
+                    dash = Dashboard::new(&state_clone, self.tx.clone());
+                },
             }
 
-            if let Err(e) = terminal.draw(|frame| dash.render(frame, frame.size(), None)) {
+            if let Err(e) = terminal
+                .draw(|frame| dash.render(frame, frame.size(), None))
+                .context("cannot render")
+            {
                 println!("error during drawing");
-                return Err(e.into());
+                break Err(e);
             }
         };
 
         restore_terminal(&mut terminal)?;
-        Ok(result)
+        result
     }
 }
 

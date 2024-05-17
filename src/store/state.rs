@@ -28,7 +28,7 @@ pub struct AppState {
 pub struct State {
     pub app_state: AppState,
     pub tx: UnboundedSender<AppState>,
-    client: AwsClient,
+    pub client: AwsClient,
 }
 
 impl State {
@@ -85,6 +85,11 @@ impl State {
                         Action::SetAccount(account_idx) => {
                             self.app_state.accounts.active_idx = Some(account_idx);
                             // should recreate aws client with new selected account
+                            let account = self.app_state.accounts.available_accounts.get(account_idx).map(|val| val.as_str()).unwrap_or("default");
+                            self.client.switch_account(account).await;
+                            let buckets = self.client.list_buckets().await;
+                            self.app_state.sources.available_sources = if let Ok(buckets) = buckets {buckets} else {vec![]};
+                            self.tx.send(self.app_state.clone())?;
                         },
                     }
                 }

@@ -35,4 +35,7 @@ impl<'a> Sources<'a> {
             }
         };
     }
+    pub fn update_items(&mut self, items: Vec<&'a str>) {
+        self.component = ListComponent::new("Sources", items);
+    }
 }

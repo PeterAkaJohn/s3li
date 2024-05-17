@@ -18,8 +18,8 @@ impl AwsClient {
             client,
         }
     }
-    pub async fn switch_account(&mut self, new_account: String) -> Result<bool> {
-        self.account = new_account;
+    pub async fn switch_account(&mut self, new_account: &str) {
+        self.account = new_account.to_string();
         let credentials_provider = ProfileFileCredentialsProvider::builder()
             .profile_name(&self.account)
             .build();
@@ -28,8 +28,8 @@ impl AwsClient {
             .load()
             .await;
         self.client = Client::new(&config);
-        Ok(true)
     }
+
     pub async fn list_buckets(&self) -> Result<Vec<String>> {
         let resp = self.client.list_buckets().send().await?;
         let buckets = resp
