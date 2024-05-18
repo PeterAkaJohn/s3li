@@ -6,12 +6,12 @@ use crate::{action::Action, providers::AwsClient};
 #[derive(Debug, Default, Clone)]
 pub struct Sources {
     pub available_sources: Vec<String>,
-    pub active_idx: Option<usize>,
+    pub active_source: Option<String>,
 }
 #[derive(Debug, Default, Clone)]
 pub struct Accounts {
     pub available_accounts: Vec<String>,
-    pub active_idx: Option<usize>,
+    pub active_account: Option<String>,
 }
 #[derive(Debug, Default, Clone)]
 pub struct Explorer {
@@ -31,6 +31,13 @@ pub struct State {
     pub client: AwsClient,
 }
 
+pub enum StateAction {
+    AppState(AppState),
+    Sources(Sources),
+    Accounts(Accounts),
+    Explorer(Explorer),
+}
+
 impl State {
     pub async fn new() -> (Self, UnboundedReceiver<AppState>) {
         let (tx, rx) = mpsc::unbounded_channel();
@@ -39,19 +46,12 @@ impl State {
         accounts.sort();
         let app_state = AppState {
             sources: Sources {
-                available_sources: vec![
-                    "test1", "test2", "test3", "test1", "test2", "test3", "test1", "test2",
-                    "test3", "test1", "test2", "test3", "test1", "test2", "test3", "test1",
-                    "test2", "test3", "test1", "test2", "test3", "test1", "test2", "test3",
-                ]
-                .iter()
-                .map(|val| val.to_string())
-                .collect(),
-                active_idx: None,
+                available_sources: vec![],
+                active_source: None,
             },
             explorer: Explorer { files: vec![] },
             accounts: Accounts {
-                active_idx: None,
+                active_account: None,
                 available_accounts: accounts,
             },
         };
@@ -78,14 +78,15 @@ impl State {
                         Action::Render => {},
                         Action::Key(_) =>{},
                         Action::SetSource(source_idx) => {
-                            self.app_state.sources.active_idx = Some(source_idx);
+                            let bucket = self.app_state.sources.available_sources.get(source_idx).map(|val| val.to_string());
+                            self.app_state.sources.active_source = bucket;
                             // should do a list for the folders and files in root and handle
                             // unauthenticated errors
                         },
                         Action::SetAccount(account_idx) => {
-                            self.app_state.accounts.active_idx = Some(account_idx);
-                            // should recreate aws client with new selected account
                             let account = self.app_state.accounts.available_accounts.get(account_idx).map(|val| val.as_str()).unwrap_or("default");
+                            self.app_state.accounts.active_account = Some(account.to_string());
+                            // should recreate aws client with new selected account
                             self.client.switch_account(account).await;
                             let buckets = self.client.list_buckets().await;
                             self.app_state.sources.available_sources = if let Ok(buckets) = buckets {buckets} else {vec![]};
