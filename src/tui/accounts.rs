@@ -7,15 +7,15 @@ use super::{
     list::ListComponent,
 };
 
-pub struct Accounts<'a> {
-    component: ListComponent<'a, &'a str>,
+pub struct Accounts {
+    component: ListComponent<String>,
     ui_tx: UnboundedSender<Action>,
 }
 
-impl<'a> Accounts<'a> {
-    pub fn new(items: Vec<&'a str>, ui_tx: UnboundedSender<Action>) -> Accounts<'a> {
+impl Accounts {
+    pub fn new(items: &Vec<String>, ui_tx: UnboundedSender<Action>) -> Accounts {
         Accounts {
-            component: ListComponent::new("Accounts", items),
+            component: ListComponent::new("Accounts".to_string(), items.to_owned()),
             ui_tx,
         }
     }

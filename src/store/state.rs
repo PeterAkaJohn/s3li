@@ -31,13 +31,6 @@ pub struct State {
     pub client: AwsClient,
 }
 
-pub enum StateAction {
-    AppState(AppState),
-    Sources(Sources),
-    Accounts(Accounts),
-    Explorer(Explorer),
-}
-
 impl State {
     pub async fn new() -> (Self, UnboundedReceiver<AppState>) {
         let (tx, rx) = mpsc::unbounded_channel();
@@ -86,7 +79,6 @@ impl State {
                         Action::SetAccount(account_idx) => {
                             let account = self.app_state.accounts.available_accounts.get(account_idx).map(|val| val.as_str()).unwrap_or("default");
                             self.app_state.accounts.active_account = Some(account.to_string());
-                            // should recreate aws client with new selected account
                             self.client.switch_account(account).await;
                             let buckets = self.client.list_buckets().await;
                             self.app_state.sources.available_sources = if let Ok(buckets) = buckets {buckets} else {vec![]};

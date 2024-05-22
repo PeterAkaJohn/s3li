@@ -7,15 +7,15 @@ use super::{
     list::ListComponent,
 };
 
-pub struct Sources<'a> {
-    component: ListComponent<'a, &'a str>,
+pub struct Sources {
+    component: ListComponent<String>,
     ui_tx: UnboundedSender<Action>,
 }
 
-impl<'a> Sources<'a> {
-    pub fn new(items: Vec<&'a str>, ui_tx: UnboundedSender<Action>) -> Sources<'a> {
+impl Sources {
+    pub fn new(items: &Vec<String>, ui_tx: UnboundedSender<Action>) -> Sources {
         Sources {
-            component: ListComponent::new("Sources", items),
+            component: ListComponent::new("Sources".to_string(), items.to_owned()),
             ui_tx,
         }
     }
@@ -35,7 +35,7 @@ impl<'a> Sources<'a> {
             }
         };
     }
-    pub fn update_items(&mut self, items: Vec<&'a str>) {
-        self.component = ListComponent::new("Sources", items);
+    pub fn update_items(&mut self, items: Vec<String>) {
+        self.component = ListComponent::new("Sources".to_string(), items);
     }
 }

@@ -3,23 +3,23 @@ use crossterm::event::KeyEventKind;
 use super::component::{Component, ComponentProps, WithContainer};
 
 #[derive(Debug)]
-pub struct SimpleComponent<'a> {
-    container_title: &'a str,
+pub struct SimpleComponent {
+    container_title: String,
 }
-impl<'a> SimpleComponent<'a> {
-    pub fn new(container_title: &'a str) -> SimpleComponent<'a> {
+impl SimpleComponent {
+    pub fn new(container_title: String) -> SimpleComponent {
         Self { container_title }
     }
 }
-impl WithContainer<'_> for SimpleComponent<'_> {}
-impl Component for SimpleComponent<'_> {
+impl WithContainer<'_> for SimpleComponent {}
+impl Component for SimpleComponent {
     fn render(
         &mut self,
         f: &mut ratatui::prelude::Frame,
         area: ratatui::prelude::Rect,
         props: Option<ComponentProps>,
     ) {
-        let explorer = self.with_container(self.container_title, &props);
+        let explorer = self.with_container(&self.container_title, &props);
         f.render_widget(explorer, area);
     }
 

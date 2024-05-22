@@ -14,11 +14,11 @@ use super::{
     sources::Sources, // sources::Sources,
 };
 
-pub struct Dashboard<'a> {
+pub struct Dashboard {
     selected_component: DashboardComponents,
-    sources: Sources<'a>,
-    accounts: Accounts<'a>,
-    explorer: Explorer<'a>,
+    sources: Sources,
+    accounts: Accounts,
+    explorer: Explorer,
     ui_tx: UnboundedSender<Action>,
     aside_constraints: [Constraint; 2],
 }
@@ -29,35 +29,35 @@ enum DashboardComponents {
     Explorer,
 }
 
-impl<'a> Dashboard<'a> {
-    pub fn new(state: &'a AppState, ui_tx: UnboundedSender<Action>) -> Self {
-        let sources = Sources::new(
-            state
-                .sources
-                .available_sources
-                .iter()
-                .map(|val| val.as_str())
-                .collect(),
-            ui_tx.clone(),
-        );
-        let accounts = Accounts::new(
-            state
-                .accounts
-                .available_accounts
-                .iter()
-                .map(|val| val.as_str())
-                .collect(),
-            ui_tx.clone(),
-        );
+impl Dashboard {
+    pub fn new(state: &AppState, ui_tx: UnboundedSender<Action>) -> Self
+    where
+        Self: Sized,
+    {
+        let sources = Sources::new(&state.sources.available_sources, ui_tx.clone());
+        let accounts = Accounts::new(&state.accounts.available_accounts, ui_tx.clone());
 
         let explorer = Explorer::new(ui_tx.clone());
-        Self {
+        Dashboard {
             selected_component: DashboardComponents::Sources,
             sources,
             accounts,
             explorer,
             ui_tx,
             aside_constraints: [Constraint::Fill(1), Constraint::Length(3)],
+        }
+    }
+    pub fn refresh_components(self, state: &AppState) -> Self {
+        let sources = Sources::new(&state.sources.available_sources, self.ui_tx.clone());
+        let accounts = Accounts::new(&state.accounts.available_accounts, self.ui_tx.clone());
+        let explorer = Explorer::new(self.ui_tx.clone());
+        Dashboard {
+            selected_component: self.selected_component,
+            sources,
+            accounts,
+            explorer,
+            ui_tx: self.ui_tx,
+            aside_constraints: self.aside_constraints,
         }
     }
     fn change_selected_component(&mut self) {
@@ -75,7 +75,7 @@ impl<'a> Dashboard<'a> {
     }
 }
 
-impl Component for Dashboard<'_> {
+impl Component for Dashboard {
     fn render(&mut self, f: &mut ratatui::prelude::Frame, _area: Rect, _: Option<ComponentProps>) {
         let [aside, main] = *Layout::default()
             .direction(Direction::Horizontal)

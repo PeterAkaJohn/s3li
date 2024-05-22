@@ -1,5 +1,3 @@
-
-
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::action::Action;
@@ -10,23 +8,23 @@ use super::{
 };
 
 #[derive(Debug)]
-pub struct Explorer<'a> {
-    selected_file: Option<&'a str>,
+pub struct Explorer {
+    selected_file: Option<String>,
     ui_tx: UnboundedSender<Action>,
-    component: SimpleComponent<'a>,
+    component: SimpleComponent,
 }
 
-impl<'a> Explorer<'a> {
+impl Explorer {
     pub fn new(ui_tx: UnboundedSender<Action>) -> Self {
         Self {
             selected_file: None,
             ui_tx,
-            component: SimpleComponent::new("Explorer"),
+            component: SimpleComponent::new("Explorer".to_string()),
         }
     }
 }
 
-impl Explorer<'_> {
+impl Explorer {
     pub fn render(
         &mut self,
         f: &mut ratatui::prelude::Frame,

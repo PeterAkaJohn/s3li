@@ -28,9 +28,10 @@ impl Ui {
     }
 
     pub async fn start(self, mut state_rx: UnboundedReceiver<AppState>) -> Result<()> {
-        let state = state_rx.recv().await.unwrap();
-        let mut state_clone = state.clone();
-        let mut dash = Dashboard::new(&state_clone, self.tx.clone());
+        let mut dash = {
+            let state = state_rx.recv().await.unwrap();
+            Dashboard::new(&state, self.tx.clone())
+        };
 
         let mut terminal = setup_terminal()?;
 
@@ -38,19 +39,16 @@ impl Ui {
         // need to setup crossterm events and collect them
         let mut term_events = EventStream::new();
 
-        // need also a tick for some reason
         let mut ticker = tokio::time::interval(Duration::from_millis(250));
 
         let result: Result<()> = loop {
             tokio::select! {
                 _ = ticker.tick() => {
                     // println!("ticking");
-                    ()
                 },
                 maybe_events = term_events.next() => {
                     match maybe_events {
                         Some(Ok(Event::Key(event))) => {
-                            // println!("received event from terminal, sending to ui, possible rerendering {:?}", event);
                             if event.code == crossterm::event::KeyCode::Char('q') {
                                 self.tx.send(Action::Quit)?;
                                 break Ok(());
@@ -61,10 +59,8 @@ impl Ui {
                     }
                 },
                 Some(updated_state) = state_rx.recv() => {
-                    // println!("{:?}", state);
-                    // println!("received appstate from state, rendering...");
-                    state_clone = updated_state.clone();
-                    dash = Dashboard::new(&state_clone, self.tx.clone());
+                    dash = dash.refresh_components(&updated_state)
+                    // dash = Dashboard::new(&state_clone, self.tx.clone());
                 },
             }
 

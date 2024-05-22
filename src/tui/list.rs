@@ -47,15 +47,15 @@ pub trait WithList {
     }
 }
 
-pub struct ListComponent<'a, T> {
+pub struct ListComponent<T> {
     list_state: ListState,
     items: Vec<T>,
-    title: &'a str,
+    title: String,
     active_idx: Option<usize>,
 }
 
-impl<'a> ListComponent<'a, &str> {
-    pub fn new(title: &'a str, items: Vec<&'a str>) -> ListComponent<'a, &'a str> {
+impl ListComponent<String> {
+    pub fn new(title: String, items: Vec<String>) -> ListComponent<String> {
         ListComponent {
             list_state: ListState::default(),
             items,
@@ -72,7 +72,7 @@ impl<'a> ListComponent<'a, &str> {
     }
 }
 
-impl WithList for ListComponent<'_, &str> {
+impl WithList for ListComponent<String> {
     fn get_list_items_len(&self) -> usize {
         self.items.len()
     }
@@ -86,9 +86,9 @@ impl WithList for ListComponent<'_, &str> {
     }
 }
 
-impl WithContainer<'_> for ListComponent<'_, &str> {}
+impl WithContainer<'_> for ListComponent<String> {}
 
-impl Component for ListComponent<'_, &str> {
+impl Component for ListComponent<String> {
     fn render(
         &mut self,
         f: &mut ratatui::prelude::Frame,
@@ -100,7 +100,7 @@ impl Component for ListComponent<'_, &str> {
         } else {
             None
         };
-        let container = self.with_container(self.title, &props);
+        let container = self.with_container(&self.title, &props);
         if let Some(ComponentProps { selected: false }) = props {
             let layout = Layout::default()
                 .direction(Direction::Vertical)
