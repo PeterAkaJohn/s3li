@@ -60,14 +60,15 @@ impl ListComponent<String> {
         items: Vec<String>,
         active_element: Option<String>,
     ) -> ListComponent<String> {
-        let active_idx = active_element
-            .and_then(|acc| items.iter().position(|val| *val == acc));
-        ListComponent {
+        let active_idx = active_element.and_then(|acc| items.iter().position(|val| *val == acc));
+        let mut list = ListComponent {
             list_state: ListState::default(),
             items,
             title,
             active_idx,
-        }
+        };
+        list.list_state.select(active_idx);
+        list
     }
     pub fn set_active_idx(&mut self, active_idx: Option<usize>) {
         self.active_idx = active_idx;
@@ -129,7 +130,6 @@ impl Component for ListComponent<String> {
         } else {
             let active_style = Style::default().fg(Color::Green).bg(Color::LightBlue);
             let default_style = Style::default().fg(Color::White);
-            let active_id = 
             let list_items = self
                 .items
                 .iter()
