@@ -44,7 +44,7 @@ impl Dashboard {
             accounts,
             explorer,
             ui_tx,
-            aside_constraints: [Constraint::Fill(1), Constraint::Length(3)],
+            aside_constraints: [Constraint::Length(3), Constraint::Fill(1)],
         }
     }
     pub fn refresh_components(self, state: &AppState) -> Self {
