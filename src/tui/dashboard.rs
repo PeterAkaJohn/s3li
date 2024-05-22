@@ -34,8 +34,8 @@ impl Dashboard {
     where
         Self: Sized,
     {
-        let sources = Sources::new(&state.sources.available_sources, ui_tx.clone());
-        let accounts = Accounts::new(&state.accounts.available_accounts, ui_tx.clone());
+        let sources = Sources::new(&state.sources.available_sources, &None, ui_tx.clone());
+        let accounts = Accounts::new(&state.accounts.available_accounts, &None, ui_tx.clone());
 
         let explorer = Explorer::new(ui_tx.clone());
         Dashboard {
@@ -48,8 +48,16 @@ impl Dashboard {
         }
     }
     pub fn refresh_components(self, state: &AppState) -> Self {
-        let sources = Sources::new(&state.sources.available_sources, self.ui_tx.clone());
-        let accounts = Accounts::new(&state.accounts.available_accounts, self.ui_tx.clone());
+        let sources = Sources::new(
+            &state.sources.available_sources,
+            &state.sources.active_source,
+            self.ui_tx.clone(),
+        );
+        let accounts = Accounts::new(
+            &state.accounts.available_accounts,
+            &state.accounts.active_account,
+            self.ui_tx.clone(),
+        );
         let explorer = Explorer::new(self.ui_tx.clone());
         Dashboard {
             selected_component: self.selected_component,

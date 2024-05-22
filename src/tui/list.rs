@@ -55,12 +55,19 @@ pub struct ListComponent<T> {
 }
 
 impl ListComponent<String> {
-    pub fn new(title: String, items: Vec<String>) -> ListComponent<String> {
+    pub fn new(
+        title: String,
+        items: Vec<String>,
+        active_element: Option<String>,
+    ) -> ListComponent<String> {
+        let active_idx = active_element
+            .map(|acc| items.iter().position(|val| *val == acc))
+            .flatten();
         ListComponent {
             list_state: ListState::default(),
             items,
             title,
-            active_idx: None,
+            active_idx,
         }
     }
     pub fn set_active_idx(&mut self, active_idx: Option<usize>) {

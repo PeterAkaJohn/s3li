@@ -13,9 +13,17 @@ pub struct Sources {
 }
 
 impl Sources {
-    pub fn new(items: &Vec<String>, ui_tx: UnboundedSender<Action>) -> Sources {
+    pub fn new(
+        items: &Vec<String>,
+        active_source: &Option<String>,
+        ui_tx: UnboundedSender<Action>,
+    ) -> Sources {
         Sources {
-            component: ListComponent::new("Sources".to_string(), items.to_owned()),
+            component: ListComponent::new(
+                "Sources".to_string(),
+                items.to_owned(),
+                active_source.to_owned(),
+            ),
             ui_tx,
         }
     }
@@ -34,8 +42,5 @@ impl Sources {
                 self.ui_tx.send(Action::SetSource(idx));
             }
         };
-    }
-    pub fn update_items(&mut self, items: Vec<String>) {
-        self.component = ListComponent::new("Sources".to_string(), items);
     }
 }

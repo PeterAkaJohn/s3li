@@ -13,9 +13,17 @@ pub struct Accounts {
 }
 
 impl Accounts {
-    pub fn new(items: &Vec<String>, ui_tx: UnboundedSender<Action>) -> Accounts {
+    pub fn new(
+        items: &Vec<String>,
+        active_account: &Option<String>,
+        ui_tx: UnboundedSender<Action>,
+    ) -> Accounts {
         Accounts {
-            component: ListComponent::new("Accounts".to_string(), items.to_owned()),
+            component: ListComponent::new(
+                "Accounts".to_string(),
+                items.to_owned(),
+                active_account.to_owned(),
+            ),
             ui_tx,
         }
     }
