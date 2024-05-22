@@ -39,7 +39,7 @@ impl Dashboard {
 
         let explorer = Explorer::new(ui_tx.clone());
         Dashboard {
-            selected_component: DashboardComponents::Sources,
+            selected_component: DashboardComponents::Accounts,
             sources,
             accounts,
             explorer,

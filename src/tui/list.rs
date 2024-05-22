@@ -61,8 +61,7 @@ impl ListComponent<String> {
         active_element: Option<String>,
     ) -> ListComponent<String> {
         let active_idx = active_element
-            .map(|acc| items.iter().position(|val| *val == acc))
-            .flatten();
+            .and_then(|acc| items.iter().position(|val| *val == acc));
         ListComponent {
             list_state: ListState::default(),
             items,
@@ -130,6 +129,7 @@ impl Component for ListComponent<String> {
         } else {
             let active_style = Style::default().fg(Color::Green).bg(Color::LightBlue);
             let default_style = Style::default().fg(Color::White);
+            let active_id = 
             let list_items = self
                 .items
                 .iter()
