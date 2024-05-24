@@ -121,7 +121,7 @@ impl Component for ListComponent<String> {
             let title = if let Some(item) = selected_item {
                 format!("{} ({})", self.title, item)
             } else {
-                self.title.to_string()
+                format!("{} ({})", self.title, &self.items.len())
             };
 
             let content = Paragraph::new(title).alignment(ratatui::layout::Alignment::Center);
