@@ -1,5 +1,8 @@
 use anyhow::Result;
-use aws_config::{profile::ProfileFileCredentialsProvider, BehaviorVersion};
+use aws_config::{
+    meta::region::RegionProviderChain, profile::ProfileFileCredentialsProvider,
+    retry::ProvideErrorKind, BehaviorVersion,
+};
 use aws_sdk_s3::Client;
 use dirs::home_dir;
 use ini::ini;
@@ -20,11 +23,13 @@ impl AwsClient {
     }
     pub async fn switch_account(&mut self, new_account: &str) {
         self.account = new_account.to_string();
+        let region_provider = RegionProviderChain::default_provider().or_else("us-east-1");
         let credentials_provider = ProfileFileCredentialsProvider::builder()
             .profile_name(&self.account)
             .build();
         let config = aws_config::defaults(BehaviorVersion::v2024_03_28())
             .credentials_provider(credentials_provider)
+            .region("us-east-1")
             .load()
             .await;
         self.client = Client::new(&config);
@@ -63,5 +68,38 @@ impl AwsClient {
                 panic!("Credentials file does not exists")
             }
         }
+    }
+
+    pub async fn list_objects(&self, bucket: String) -> (Vec<String>, Vec<String>) {
+        let mut response = self
+            .client
+            .list_objects_v2()
+            .bucket(bucket)
+            .delimiter("/")
+            .max_keys(100)
+            .into_paginator()
+            .send();
+        let mut result_files: Vec<String> = vec![];
+        let mut result_folders: Vec<String> = vec![];
+        while let Some(result) = response.next().await {
+            match result {
+                Ok(objects) => {
+                    let mut folders = objects
+                        .common_prefixes()
+                        .iter()
+                        .map(|val| val.prefix().unwrap_or("Unknown").to_owned())
+                        .collect::<Vec<_>>();
+                    let mut files = objects
+                        .contents()
+                        .iter()
+                        .map(|val| val.key().unwrap_or("Unknown").to_owned())
+                        .collect::<Vec<_>>();
+                    result_files.append(&mut files);
+                    result_folders.append(&mut folders);
+                }
+                Err(_) => break,
+            };
+        }
+        (result_files, result_folders)
     }
 }

@@ -16,6 +16,7 @@ pub struct Accounts {
 #[derive(Debug, Default, Clone)]
 pub struct Explorer {
     pub files: Vec<String>,
+    pub folders: Vec<String>,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -42,7 +43,10 @@ impl State {
                 available_sources: vec![],
                 active_source: None,
             },
-            explorer: Explorer { files: vec![] },
+            explorer: Explorer {
+                files: vec![],
+                folders: vec![],
+            },
             accounts: Accounts {
                 active_account: None,
                 available_accounts: accounts,
@@ -72,9 +76,11 @@ impl State {
                         Action::Key(_) =>{},
                         Action::SetSource(source_idx) => {
                             let bucket = self.app_state.sources.available_sources.get(source_idx).map(|val| val.to_string());
-                            self.app_state.sources.active_source = bucket;
-                            // should do a list for the folders and files in root and handle
-                            // unauthenticated errors
+                            self.app_state.sources.active_source = bucket.clone();
+                            let (files,folders) = self.client.list_objects(bucket.clone().unwrap()).await;
+                            self.app_state.explorer.files = files;
+                            self.app_state.explorer.folders = folders;
+                            self.tx.send(self.app_state.clone())?;
                         },
                         Action::SetAccount(account_idx) => {
                             let account = self.app_state.accounts.available_accounts.get(account_idx).map(|val| val.as_str()).unwrap_or("default");
