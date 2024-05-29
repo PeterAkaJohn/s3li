@@ -37,11 +37,7 @@ impl Dashboard {
         let sources = Sources::new(&state.sources.available_sources, &None, ui_tx.clone());
         let accounts = Accounts::new(&state.accounts.available_accounts, &None, ui_tx.clone());
 
-        let explorer = Explorer::new(
-            &state.explorer.files,
-            &state.explorer.folders,
-            ui_tx.clone(),
-        );
+        let explorer = Explorer::new(&vec![], &vec![], ui_tx.clone());
         Dashboard {
             selected_component: DashboardComponents::Accounts,
             sources,
@@ -62,11 +58,7 @@ impl Dashboard {
             &state.accounts.active_account,
             self.ui_tx.clone(),
         );
-        let explorer = Explorer::new(
-            &state.explorer.files,
-            &state.explorer.folders,
-            self.ui_tx.clone(),
-        );
+        let explorer = Explorer::new(&vec![], &vec![], self.ui_tx.clone());
         Dashboard {
             selected_component: self.selected_component,
             sources,

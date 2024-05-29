@@ -6,5 +6,5 @@ pub enum Action {
     Key(String),
     SetSource(usize),
     SetAccount(usize),
+    SetExplorerFolder(String),
 }
-

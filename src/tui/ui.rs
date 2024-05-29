@@ -59,8 +59,8 @@ impl Ui {
                     }
                 },
                 Some(updated_state) = state_rx.recv() => {
-                    dash = dash.refresh_components(&updated_state)
-                    // dash = Dashboard::new(&state_clone, self.tx.clone());
+                    dash = dash.refresh_components(&updated_state);
+                    println!("{:?}",updated_state);
                 },
             }
 

@@ -1,4 +1,7 @@
-use ratatui::widgets::List;
+use ratatui::{
+    layout::{Constraint, Direction, Layout},
+    widgets::List,
+};
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::action::Action;
@@ -39,9 +42,12 @@ impl Explorer {
         props: Option<ComponentProps>,
     ) {
         let block = self.with_container("Explorer", &props);
-        let items = self.folders.clone();
-        let list = List::new(items).block(block);
-        f.render_widget(list, area);
+        let folders = self.folders.clone();
+        let files = self.files.clone();
+        let inner_area = block.inner(area);
+
+        let list_folders = List::new(folders).block(block);
+        f.render_widget(list_folders, area);
     }
 
     pub fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {

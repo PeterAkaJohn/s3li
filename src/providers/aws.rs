@@ -70,12 +70,17 @@ impl AwsClient {
         }
     }
 
-    pub async fn list_objects(&self, bucket: String) -> (Vec<String>, Vec<String>) {
+    pub async fn list_objects(
+        &self,
+        bucket: String,
+        current_folder: Option<&str>,
+    ) -> (Vec<String>, Vec<String>) {
+        let delimiter = current_folder.unwrap_or("/");
         let mut response = self
             .client
             .list_objects_v2()
             .bucket(bucket)
-            .delimiter("/")
+            .delimiter(delimiter)
             .max_keys(100)
             .into_paginator()
             .send();
