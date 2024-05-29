@@ -13,7 +13,12 @@ use futures::StreamExt;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 
-use crate::{action::Action, store::state::AppState, tui::component::Component};
+use crate::{
+    action::Action,
+    logger::{self, LogToFile},
+    store::state::AppState,
+    tui::component::Component,
+};
 
 use super::dashboard::Dashboard;
 
@@ -60,7 +65,7 @@ impl Ui {
                 },
                 Some(updated_state) = state_rx.recv() => {
                     dash = dash.refresh_components(&updated_state);
-                    println!("{:?}",updated_state);
+                    logger::LOGGER.info(format!("{:?}", updated_state))?
                 },
             }
 

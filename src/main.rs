@@ -2,6 +2,7 @@ use anyhow::{Ok, Result};
 use store::state::State;
 use tui::ui::Ui;
 mod action;
+mod logger;
 mod providers;
 mod store;
 mod tui;
