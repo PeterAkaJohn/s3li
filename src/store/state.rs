@@ -1,11 +1,6 @@
 use anyhow::Result;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 
-use crate::{
-    action::Action,
-    providers::AwsClient,
-    store::explorer::{File, Folder},
-};
 use crate::{action::Action, logger::LogToFile, providers::AwsClient};
 
 use super::{
@@ -74,18 +69,22 @@ impl State {
                         Action::Render => {},
                         Action::Key(_) =>{},
                         Action::SetExplorerFolder(folder) => {
-                            let (files,folders) = self.client.list_objects(self.app_state.sources.active_source.clone().unwrap(), Some(&folder)).await;
-                            let new_selected_folder = Folder{name: folder.clone()};
-                            self.app_state.explorer.update_folder(new_selected_folder, files.iter().map(|file_key| File{name: file_key.to_owned()}).collect(), folders.iter().map(|new_folder| Folder{name: new_folder.to_owned()}).collect());
-                            self.app_state.explorer.selected_folder = Some(Folder{name: folder.clone()});
+                            let (files,folders) = self.client.list_objects(&self.app_state.sources.active_source.clone().unwrap(), Some(&folder)).await;
+                            let new_selected_folder = folder.parse().expect("selected_folder_creation cannot fail");
+                            self.app_state.explorer
+                                .update_folder(new_selected_folder, files.iter().map(|file_key| file_key.parse().expect("file creation cannot fail")).collect(), folders.iter().map(|new_folder| new_folder.parse().expect("folder creation cannot fail")).collect());
+                            self.app_state.explorer.selected_folder = Some(folder.parse().expect("new selected_folder creation cannot fail"));
                             self.tx.send(self.app_state.clone())?;
                         },
                         Action::SetSource(source_idx) => {
                             let bucket = self.app_state.sources.available_sources.get(source_idx).map(|val| val.to_string());
                             self.app_state.sources.active_source = bucket.clone();
-                            let (files,folders) = self.client.list_objects(bucket.clone().unwrap(), None).await;
-                            let file_tree = FileTree::new(Folder{name: "/".to_string()}, folders.iter().map(|file_key| Folder{name: file_key.to_owned()}).collect() ,files.iter().map(|file_key| File{name: file_key.to_owned()}).collect());
-                            self.app_state.explorer.selected_folder = Some(Folder{name: "/".to_string()});
+                            let (files,folders) = self.client.list_objects(&bucket.clone().unwrap(), None).await;
+                            let file_tree = FileTree::new(
+                                "/".parse().expect("root_folder initialization cannot fail"),
+                                folders.iter().map(|folder| folder.parse().expect("folder creation cannot fail")).collect(),
+                                files.iter().map(|file_key| file_key.parse().expect("file creation cannot fail")).collect());
+                            self.app_state.explorer.selected_folder = Some("/".parse().expect("root_folder initialization cannot fail"));
                             self.app_state.explorer.file_tree = file_tree;
                             self.tx.send(self.app_state.clone())?;
                         },

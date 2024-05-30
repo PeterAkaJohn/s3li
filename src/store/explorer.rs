@@ -1,7 +1,6 @@
 use std::{
-    cell::RefCell,
     fmt::Display,
-    rc::Rc,
+    str::FromStr,
     sync::{Arc, Mutex},
 };
 
@@ -9,10 +8,31 @@ use std::{
 pub struct Folder {
     pub name: String,
 }
+
+impl FromStr for Folder {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self {
+            name: s.to_string(),
+        })
+    }
+}
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct File {
     pub name: String,
 }
+
+impl FromStr for File {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self {
+            name: s.to_string(),
+        })
+    }
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct Explorer {
     pub selected_folder: Option<Folder>,
@@ -24,9 +44,7 @@ impl Explorer {
         Self {
             selected_folder: None,
             file_tree: FileTree::new(
-                Folder {
-                    name: "/".to_string(),
-                },
+                "/".parse().expect("root folder cannot fail"),
                 vec![],
                 vec![],
             ),
@@ -152,34 +170,30 @@ pub fn search_tree(source: TreeNode, folder_to_find: &Folder) -> Option<TreeNode
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        cell::RefCell,
-        rc::Rc,
-        sync::{Arc, Mutex},
-    };
+    use std::sync::{Arc, Mutex};
 
-    use super::{FileTree, Folder, Node};
+    use super::{FileTree, Node};
 
     #[test]
     fn test_find_node() {
         let one = Arc::new(Mutex::new(Node {
-            folder: Folder {
-                name: "one".to_string(),
-            },
+            folder: "one"
+                .parse()
+                .expect("test folder should be always available"),
             children: vec![],
             files: vec![],
         }));
         let two = Node {
-            folder: Folder {
-                name: "two".to_string(),
-            },
+            folder: "two"
+                .parse()
+                .expect("test folder should be always available"),
             children: vec![one],
             files: vec![],
         };
         let file_tree = FileTree::new(
-            Folder {
-                name: "root".to_string(),
-            },
+            "root"
+                .parse()
+                .expect("test folder should be always available"),
             vec![],
             vec![],
         );
@@ -188,20 +202,22 @@ mod tests {
         let result = file_tree
             .insert(
                 two,
-                Folder {
-                    name: "root".to_string(),
-                },
+                "root"
+                    .parse()
+                    .expect("test folder should be always available"),
             )
-            .search(Folder {
-                name: "one".to_string(),
-            });
+            .search(
+                "one"
+                    .parse()
+                    .expect("test folder should be always available"),
+            );
 
         assert!(result.is_some());
         assert_eq!(
             result.unwrap().lock().unwrap().folder,
-            Folder {
-                name: "one".to_string()
-            }
+            "one"
+                .parse()
+                .expect("test folder should be always available")
         );
     }
 }

@@ -72,7 +72,7 @@ impl AwsClient {
 
     pub async fn list_objects(
         &self,
-        bucket: String,
+        bucket: &str,
         current_folder: Option<&str>,
     ) -> (Vec<String>, Vec<String>) {
         let delimiter = current_folder.unwrap_or("/");
