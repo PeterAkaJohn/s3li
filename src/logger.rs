@@ -1,6 +1,7 @@
 use std::{fs::OpenOptions, io::Write};
 
 use anyhow::{Ok, Result};
+use time::OffsetDateTime;
 
 pub trait LogToFile {
     fn write_to_file(&self, message: &str) -> Result<()> {
@@ -19,7 +20,7 @@ impl<'a> Logger<'a> {
             .append(true)
             .open(self.0)
             .unwrap();
-        writeln!(file, "{}", message)?;
+        writeln!(file, "{}\t{}", OffsetDateTime::now_utc(), message)?;
         Ok(())
     }
     pub fn info(&self, message: &str) -> Result<()> {

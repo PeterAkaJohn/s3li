@@ -1521,6 +1521,7 @@ dependencies = [
  "futures",
  "ini",
  "ratatui",
+ "time",
  "tokio",
  "tokio-util",
 ]
