@@ -1,24 +1,19 @@
-use std::{
-    fs::{File, OpenOptions},
-    io::Write,
-};
+use std::{fs::OpenOptions, io::Write};
 
 use anyhow::{Ok, Result};
 
 pub trait LogToFile {
-    fn write_to_file(&self, message: String) -> Result<()> {
-        let mut file = File::create("log.txt")?;
-        file.write_all(message.as_bytes())?;
-        Ok(())
+    fn write_to_file(&self, message: &str) -> Result<()> {
+        LOGGER.write_to_file(message)
     }
-    fn info(&self, message: String) -> Result<()> {
+    fn info(&self, message: &str) -> Result<()> {
         self.write_to_file(message)
     }
 }
 
 pub struct Logger<'a>(&'a str);
 impl<'a> Logger<'a> {
-    fn write_to_file(&self, message: String) -> Result<()> {
+    pub fn write_to_file(&self, message: &str) -> Result<()> {
         let mut file = OpenOptions::new()
             .create(true)
             .append(true)
@@ -27,7 +22,7 @@ impl<'a> Logger<'a> {
         writeln!(file, "{}", message)?;
         Ok(())
     }
-    pub fn info(&self, message: String) -> Result<()> {
+    pub fn info(&self, message: &str) -> Result<()> {
         self.write_to_file(message)
     }
     pub fn change_file(&mut self, log_file: &'a str) {

@@ -6,6 +6,7 @@ use crate::{
     providers::AwsClient,
     store::explorer::{File, Folder},
 };
+use crate::{action::Action, logger::LogToFile, providers::AwsClient};
 
 use super::{
     accounts::Accounts,
@@ -18,6 +19,13 @@ pub struct AppState {
     pub sources: Sources,
     pub accounts: Accounts,
     pub explorer: Explorer,
+}
+
+impl LogToFile for AppState {
+    fn info(&self, message: &str) -> Result<()> {
+        let _ = self.write_to_file(message);
+        self.write_to_file(&format!("{:#?}", self))
+    }
 }
 
 pub struct State {
