@@ -1,4 +1,4 @@
 mod accounts;
-mod explorer;
+pub mod explorer;
 mod sources;
 pub mod state;

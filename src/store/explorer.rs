@@ -33,6 +33,12 @@ impl FromStr for File {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
+pub enum TreeItem {
+    Folder(Folder, Option<Folder>),
+    File(File, Option<Folder>),
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct Explorer {
     pub selected_folder: Option<Folder>,
@@ -151,6 +157,36 @@ impl FileTree {
     pub fn search(&self, folder_to_find: Folder) -> Option<TreeNode> {
         search_tree(self.root.clone(), &folder_to_find)
     }
+
+    pub fn tree_to_vec(self) -> Vec<TreeItem> {
+        let mut tree_items: Vec<TreeItem> = vec![];
+        nodes_to_vec(self.root, &mut tree_items);
+
+        tree_items
+    }
+}
+
+pub fn nodes_to_vec(source: TreeNode, tree_items: &mut Vec<TreeItem>) {
+    let node = source.lock().unwrap();
+    tree_items.push(TreeItem::Folder(
+        node.folder.to_owned(),
+        tree_items.last().map(|item| match item {
+            TreeItem::Folder(parent_folder, _) => parent_folder.to_owned(),
+            TreeItem::File(_, _) => panic!("must never happen"),
+        }),
+    ));
+
+    for child_tree in &node.children {
+        nodes_to_vec(child_tree.clone(), tree_items);
+    }
+
+    tree_items.append(
+        &mut node
+            .files
+            .iter()
+            .map(|file| TreeItem::File(file.to_owned(), Some(node.folder.to_owned())))
+            .collect(),
+    );
 }
 
 pub fn search_tree(source: TreeNode, folder_to_find: &Folder) -> Option<TreeNode> {
@@ -172,7 +208,80 @@ pub fn search_tree(source: TreeNode, folder_to_find: &Folder) -> Option<TreeNode
 mod tests {
     use std::sync::{Arc, Mutex};
 
-    use super::{FileTree, Node};
+    use crate::store::explorer::TreeItem;
+
+    use super::{File, FileTree, Node};
+
+    #[test]
+    fn test_nodes_to_vec() {
+        let one = Arc::new(Mutex::new(Node {
+            folder: "one"
+                .parse()
+                .expect("test folder should be always available"),
+            children: vec![],
+            files: vec![
+                File {
+                    name: "one1".to_string(),
+                },
+                File {
+                    name: "one2".to_string(),
+                },
+            ],
+        }));
+        let two = Node {
+            folder: "two"
+                .parse()
+                .expect("test folder should be always available"),
+            children: vec![one],
+            files: vec![
+                File {
+                    name: "two1".to_string(),
+                },
+                File {
+                    name: "two2".to_string(),
+                },
+            ],
+        };
+        let file_tree = FileTree::new(
+            "root"
+                .parse()
+                .expect("test folder should be always available"),
+            vec![],
+            vec![],
+        );
+
+        let file_tree = file_tree.insert(two, "root".parse().expect("cannot fail"));
+        let result = file_tree.tree_to_vec();
+
+        assert_eq!(
+            result.first().unwrap(),
+            &TreeItem::Folder("root".parse().unwrap(), None)
+        );
+        assert_eq!(
+            result.get(1).unwrap(),
+            &TreeItem::Folder("two".parse().unwrap(), Some("root".parse().unwrap()))
+        );
+        assert_eq!(
+            result.get(2).unwrap(),
+            &TreeItem::Folder("one".parse().unwrap(), Some("two".parse().unwrap()))
+        );
+        assert_eq!(
+            result.get(3).unwrap(),
+            &TreeItem::File("one1".parse().unwrap(), Some("one".parse().unwrap()))
+        );
+        assert_eq!(
+            result.get(4).unwrap(),
+            &TreeItem::File("one2".parse().unwrap(), Some("one".parse().unwrap()))
+        );
+        assert_eq!(
+            result.get(5).unwrap(),
+            &TreeItem::File("two1".parse().unwrap(), Some("two".parse().unwrap()))
+        );
+        assert_eq!(
+            result.get(6).unwrap(),
+            &TreeItem::File("two2".parse().unwrap(), Some("two".parse().unwrap()))
+        )
+    }
 
     #[test]
     fn test_find_node() {
@@ -198,7 +307,6 @@ mod tests {
             vec![],
         );
 
-        println!("{}", file_tree);
         let result = file_tree
             .insert(
                 two,
