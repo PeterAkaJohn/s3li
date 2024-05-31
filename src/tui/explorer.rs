@@ -1,10 +1,10 @@
-use ratatui::{
-    layout::{Constraint, Direction, Layout},
-    widgets::List,
-};
 use tokio::sync::mpsc::UnboundedSender;
 
-use crate::action::Action;
+use crate::{
+    action::Action,
+    logger::LOGGER,
+    store::explorer::{FileTree, TreeItem},
+};
 
 use super::{
     component::{Component, ComponentProps, WithContainer},
@@ -14,18 +14,16 @@ use super::{
 #[derive(Debug)]
 pub struct Explorer {
     selected_file: Option<String>,
-    files: Vec<String>,
-    folders: Vec<String>,
+    file_tree: Vec<TreeItem>,
     ui_tx: UnboundedSender<Action>,
     component: SimpleComponent,
 }
 
 impl Explorer {
-    pub fn new(files: &Vec<String>, folders: &Vec<String>, ui_tx: UnboundedSender<Action>) -> Self {
+    pub fn new(file_tree: Option<FileTree>, ui_tx: UnboundedSender<Action>) -> Self {
         Self {
             selected_file: None,
-            files: files.to_owned(),
-            folders: folders.to_owned(),
+            file_tree: file_tree.map(|ft| ft.tree_to_vec()).unwrap_or_default(),
             ui_tx,
             component: SimpleComponent::new("Explorer".to_string()),
         }
@@ -42,12 +40,12 @@ impl Explorer {
         props: Option<ComponentProps>,
     ) {
         let block = self.with_container("Explorer", &props);
-        let folders = self.folders.clone();
-        let files = self.files.clone();
         let inner_area = block.inner(area);
 
-        let list_folders = List::new(folders).block(block);
-        f.render_widget(list_folders, area);
+        LOGGER.info(&format!("{:#?}", self.file_tree));
+
+        // let list_folders = List::new(folders).block(block);
+        // f.render_widget(list_folders, area);
     }
 
     pub fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
