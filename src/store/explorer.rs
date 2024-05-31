@@ -33,7 +33,7 @@ impl FromStr for File {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum TreeItem {
     Folder(Folder, Option<Folder>),
     File(File, Option<Folder>),
@@ -160,24 +160,22 @@ impl FileTree {
 
     pub fn tree_to_vec(self) -> Vec<TreeItem> {
         let mut tree_items: Vec<TreeItem> = vec![];
-        nodes_to_vec(self.root, &mut tree_items);
+        nodes_to_vec(self.root, &mut tree_items, None);
 
         tree_items
     }
 }
 
-pub fn nodes_to_vec(source: TreeNode, tree_items: &mut Vec<TreeItem>) {
+pub fn nodes_to_vec(
+    source: TreeNode,
+    tree_items: &mut Vec<TreeItem>,
+    parent_folder: Option<Folder>,
+) {
     let node = source.lock().unwrap();
-    tree_items.push(TreeItem::Folder(
-        node.folder.to_owned(),
-        tree_items.last().map(|item| match item {
-            TreeItem::Folder(parent_folder, _) => parent_folder.to_owned(),
-            TreeItem::File(_, _) => panic!("must never happen"),
-        }),
-    ));
+    tree_items.push(TreeItem::Folder(node.folder.to_owned(), parent_folder));
 
     for child_tree in &node.children {
-        nodes_to_vec(child_tree.clone(), tree_items);
+        nodes_to_vec(child_tree.clone(), tree_items, Some(node.folder.clone()));
     }
 
     tree_items.append(
