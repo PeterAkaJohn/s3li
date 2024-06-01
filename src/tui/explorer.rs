@@ -1,54 +1,116 @@
+use crossterm::event::KeyEventKind;
+use ratatui::{
+    style::{Color, Style},
+    text::{Line, Span},
+    widgets::{List, ListItem, ListState},
+};
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
     action::Action,
     logger::LOGGER,
-    store::explorer::{FileTree, TreeItem},
+    store::explorer::{FileTree, Folder, TreeItem},
 };
 
 use super::{
     component::{Component, ComponentProps, WithContainer},
-    simple::SimpleComponent,
+    list::WithList,
 };
 
 #[derive(Debug)]
 pub struct Explorer {
+    list_state: ListState,
     selected_file: Option<String>,
     file_tree: Vec<TreeItem>,
     ui_tx: UnboundedSender<Action>,
-    component: SimpleComponent,
 }
 
 impl Explorer {
     pub fn new(file_tree: Option<FileTree>, ui_tx: UnboundedSender<Action>) -> Self {
         Self {
+            list_state: ListState::default(),
             selected_file: None,
             file_tree: file_tree.map(|ft| ft.tree_to_vec()).unwrap_or_default(),
             ui_tx,
-            component: SimpleComponent::new("Explorer".to_string()),
         }
     }
 }
 
 impl WithContainer<'_> for Explorer {}
 
-impl Explorer {
-    pub fn render(
+impl WithList for Explorer {
+    fn get_list_items_len(&self) -> usize {
+        self.file_tree.len()
+    }
+
+    fn get_list_state_selected(&self) -> Option<usize> {
+        self.list_state.selected()
+    }
+
+    fn set_selected(&mut self, idx: Option<usize>) {
+        self.list_state.select(idx);
+    }
+}
+
+impl Component for Explorer {
+    fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
+        if key.kind != KeyEventKind::Press {
+            return;
+        }
+        if self.file_tree.is_empty() {
+            return;
+        }
+        match key.code {
+            crossterm::event::KeyCode::Esc => {
+                self.unselect();
+            }
+            crossterm::event::KeyCode::Up | crossterm::event::KeyCode::Char('k') => {
+                self.select_previous();
+            }
+            crossterm::event::KeyCode::Down | crossterm::event::KeyCode::Char('j') => {
+                self.select_next();
+            }
+            _ => {}
+        };
+    }
+
+    fn render(
         &mut self,
         f: &mut ratatui::prelude::Frame,
         area: ratatui::prelude::Rect,
         props: Option<ComponentProps>,
     ) {
-        let block = self.with_container("Explorer", &props);
-        let inner_area = block.inner(area);
-
         LOGGER.info(&format!("{:#?}", self.file_tree));
+        let container = self.with_container("Explorer", &props);
 
         // let list_folders = List::new(folders).block(block);
         // f.render_widget(list_folders, area);
-    }
+        let active_style = Style::default().fg(Color::Green).bg(Color::LightBlue);
+        let default_style = Style::default().fg(Color::White);
+        let list_items = self
+            .file_tree
+            .iter()
+            .filter(|tree_item| {
+                if let TreeItem::Folder(folder, _) = tree_item {
+                    return folder.name != *"/";
+                }
+                true
+            })
+            .map(|tree_item| {
+                let label = match tree_item {
+                    TreeItem::Folder(folder, _) => format!("folder_{}", folder.name),
+                    TreeItem::File(file, _) => format!("file_{}", file.name),
+                };
+                ListItem::new(Line::from(Span::styled(label, default_style)))
+            })
+            .collect::<Vec<ListItem>>();
 
-    pub fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
-        self.component.handle_key_events(key)
+        let list = List::new(list_items)
+            .block(container)
+            .scroll_padding(2)
+            .highlight_style(active_style)
+            .highlight_spacing(ratatui::widgets::HighlightSpacing::Always);
+
+        f.render_stateful_widget(list, area, &mut self.list_state);
     }
 }

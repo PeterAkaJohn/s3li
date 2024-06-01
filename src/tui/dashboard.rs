@@ -81,6 +81,13 @@ impl Dashboard {
             _ => {}
         }
     }
+
+    fn set_explorer_selected(&mut self) {
+        self.selected_component = DashboardComponents::Explorer;
+    }
+    fn set_sources_selected(&mut self) {
+        self.selected_component = DashboardComponents::Sources;
+    }
 }
 
 impl Component for Dashboard {
@@ -128,6 +135,22 @@ impl Component for Dashboard {
             | crossterm::event::KeyCode::Right
             | crossterm::event::KeyCode::Char('h')
             | crossterm::event::KeyCode::Char('l') => self.change_selected_component(),
+            crossterm::event::KeyCode::Esc => match self.selected_component {
+                DashboardComponents::Explorer => {
+                    self.explorer.handle_key_events(key);
+                    self.set_sources_selected();
+                }
+                DashboardComponents::Accounts => self.accounts.handle_key_events(key),
+                DashboardComponents::Sources => self.sources.handle_key_events(key),
+            },
+            crossterm::event::KeyCode::Enter => match self.selected_component {
+                DashboardComponents::Sources => {
+                    self.sources.handle_key_events(key);
+                    self.set_explorer_selected();
+                }
+                DashboardComponents::Accounts => self.accounts.handle_key_events(key),
+                DashboardComponents::Explorer => self.explorer.handle_key_events(key),
+            },
             _ => match self.selected_component {
                 DashboardComponents::Sources => self.sources.handle_key_events(key),
                 DashboardComponents::Accounts => self.accounts.handle_key_events(key),
