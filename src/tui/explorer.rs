@@ -61,6 +61,20 @@ impl Component for Explorer {
             return;
         }
         match key.code {
+            crossterm::event::KeyCode::Enter => {
+                let selected_item = self
+                    .get_list_state_selected()
+                    .and_then(|idx| self.file_tree.get(idx));
+                if let Some(tree_item) = selected_item {
+                    match tree_item {
+                        TreeItem::Folder(folder, _) => self
+                            .ui_tx
+                            .send(Action::SetExplorerFolder(folder.name.clone()))
+                            .expect("should not fail"),
+                        TreeItem::File(_, _) => {}
+                    }
+                };
+            }
             crossterm::event::KeyCode::Esc => {
                 self.unselect();
             }
@@ -70,6 +84,7 @@ impl Component for Explorer {
             crossterm::event::KeyCode::Down | crossterm::event::KeyCode::Char('j') => {
                 self.select_next();
             }
+
             _ => {}
         };
     }
@@ -98,8 +113,8 @@ impl Component for Explorer {
             })
             .map(|tree_item| {
                 let label = match tree_item {
-                    TreeItem::Folder(folder, _) => format!("folder_{}", folder.name),
-                    TreeItem::File(file, _) => format!("file_{}", file.name),
+                    TreeItem::Folder(folder, _) => format!("▶ {}", folder.name),
+                    TreeItem::File(file, _) => format!("{}", file.name),
                 };
                 ListItem::new(Line::from(Span::styled(label, default_style)))
             })

@@ -7,6 +7,8 @@ use aws_sdk_s3::Client;
 use dirs::home_dir;
 use ini::ini;
 
+use crate::logger::LOGGER;
+
 pub struct AwsClient {
     account: String,
     client: Client,
@@ -75,12 +77,14 @@ impl AwsClient {
         bucket: &str,
         current_folder: Option<&str>,
     ) -> (Vec<String>, Vec<String>) {
-        let delimiter = current_folder.unwrap_or("/");
+        let prefix = current_folder.unwrap_or("");
+        LOGGER.info(&format!("prefix {}", prefix));
         let mut response = self
             .client
             .list_objects_v2()
             .bucket(bucket)
-            .delimiter(delimiter)
+            .prefix(prefix)
+            .delimiter("/")
             .max_keys(100)
             .into_paginator()
             .send();
@@ -89,6 +93,7 @@ impl AwsClient {
         while let Some(result) = response.next().await {
             match result {
                 Ok(objects) => {
+                    LOGGER.info(&format!("{:#?}", objects));
                     let mut folders = objects
                         .common_prefixes()
                         .iter()

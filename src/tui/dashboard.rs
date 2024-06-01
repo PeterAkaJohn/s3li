@@ -110,7 +110,10 @@ impl Component for Dashboard {
             f,
             sources,
             Some(ComponentProps {
-                selected: matches!(self.selected_component, DashboardComponents::Sources),
+                selected: matches!(
+                    self.selected_component,
+                    DashboardComponents::Sources | DashboardComponents::Explorer
+                ),
             }),
         );
         self.accounts.render(
