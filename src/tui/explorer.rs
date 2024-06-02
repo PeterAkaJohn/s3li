@@ -95,11 +95,8 @@ impl Component for Explorer {
         area: ratatui::prelude::Rect,
         props: Option<ComponentProps>,
     ) {
-        LOGGER.info(&format!("{:#?}", self.file_tree));
         let container = self.with_container("Explorer", &props);
 
-        // let list_folders = List::new(folders).block(block);
-        // f.render_widget(list_folders, area);
         let active_style = Style::default().fg(Color::Green).bg(Color::LightBlue);
         let default_style = Style::default().fg(Color::White);
         let list_items = self
@@ -112,7 +109,6 @@ impl Component for Explorer {
                 true
             })
             .map(|tree_item| {
-                LOGGER.info(&format!("{:?}", tree_item));
                 let label = match tree_item {
                     TreeItem::Folder(folder, _) => format!("▶ {}", folder.relative_name),
                     TreeItem::File(file, _) => format!("{}", file.relative_name),
@@ -145,7 +141,6 @@ impl WithIndentation for TreeItem {
                 if folder.depth > 0 {
                     let mut new_label = " ".repeat(folder.depth);
                     new_label.push_str(&label);
-                    LOGGER.info(&format!("{}", &new_label));
                     return new_label;
                 }
                 label
@@ -154,7 +149,6 @@ impl WithIndentation for TreeItem {
                 if file.depth > 0 {
                     let mut new_label = "   ".repeat(file.depth);
                     new_label.push_str(&label);
-                    LOGGER.info(&format!("{}", &new_label));
                     return new_label;
                 }
                 label
