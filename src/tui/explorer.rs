@@ -151,7 +151,7 @@ impl WithIndentation for TreeItem {
             }
             TreeItem::File(file, _) => {
                 if file.depth > 0 {
-                    let mut new_label = "   ".repeat(file.depth);
+                    let mut new_label = " ".repeat(file.depth + 3);
                     new_label.push_str(&label);
                     return new_label;
                 }
