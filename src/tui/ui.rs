@@ -65,7 +65,7 @@ impl Ui {
                 },
                 Some(updated_state) = state_rx.recv() => {
                     dash = dash.refresh_components(&updated_state);
-                    let _ = updated_state.info("App state is as follows: \n");
+                    // let _ = updated_state.info("App state is as follows: \n");
                 },
             }
 

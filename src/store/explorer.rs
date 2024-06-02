@@ -1,3 +1,4 @@
+use core::panic;
 use std::{
     fmt::Display,
     str::FromStr,
@@ -7,28 +8,57 @@ use std::{
 #[derive(Debug, Default, Clone, Eq, Hash, PartialEq)]
 pub struct Folder {
     pub name: String,
+    pub relative_name: String,
+    pub depth: usize,
 }
 
 impl FromStr for Folder {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (relative_name, depth) = if s.ends_with('/') {
+            // this is a folder
+            let full_name_split = s.split('/').collect::<Vec<&str>>();
+            let depth = full_name_split.len();
+            let depth = if depth > 2 { depth - 2 } else { 0 };
+            let folder_relative_name = match full_name_split[..] {
+                [.., relative_name_item, _] => relative_name_item.to_string(),
+                _ => {
+                    // root folder case
+                    panic!("relative name should always be available")
+                }
+            };
+            (folder_relative_name, depth)
+        } else {
+            // this is a file
+            (s.split('/').last().unwrap_or(s).to_string(), 0)
+        };
         Ok(Self {
             name: s.to_string(),
+            relative_name,
+            depth,
         })
     }
 }
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct File {
     pub name: String,
+    pub relative_name: String,
+    pub depth: usize,
 }
 
 impl FromStr for File {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let full_name_split = s.split('/').collect::<Vec<&str>>();
+        let relative_name = full_name_split.last().unwrap_or(&"/").to_string();
+        let depth = full_name_split.len();
+        let depth = if depth > 2 { depth - 2 } else { 0 };
         Ok(Self {
             name: s.to_string(),
+            relative_name,
+            depth,
         })
     }
 }
@@ -206,9 +236,49 @@ pub fn search_tree(source: TreeNode, folder_to_find: &Folder) -> Option<TreeNode
 mod tests {
     use std::sync::{Arc, Mutex};
 
-    use crate::store::explorer::TreeItem;
+    use crate::store::explorer::{File, Folder, TreeItem};
 
-    use super::{File, FileTree, Node};
+    use super::{FileTree, Node};
+
+    #[test]
+    fn test_folder_relative_name() {
+        let folder: Folder = "/".parse().unwrap();
+        assert_eq!(folder.name, "/".to_string());
+        assert_eq!(folder.relative_name, "".to_string());
+        assert_eq!(folder.depth, 0);
+        let folder: Folder = "test/".parse().unwrap();
+        assert_eq!(folder.name, "test/".to_string());
+        assert_eq!(folder.relative_name, "test".to_string());
+        assert_eq!(folder.depth, 0);
+        let folder: Folder = "test/something/".parse().unwrap();
+        assert_eq!(folder.name, "test/something/".to_string());
+        assert_eq!(folder.relative_name, "something".to_string());
+        assert_eq!(folder.depth, 1);
+        let folder: Folder = "test/something/amazing/".parse().unwrap();
+        assert_eq!(folder.name, "test/something/amazing/".to_string());
+        assert_eq!(folder.relative_name, "amazing".to_string());
+        assert_eq!(folder.depth, 2);
+    }
+
+    #[test]
+    fn test_file_relative_name() {
+        let file: File = "test.test".parse().unwrap();
+        assert_eq!(file.name, "test.test".to_string());
+        assert_eq!(file.relative_name, "test.test".to_string());
+        assert_eq!(file.depth, 0);
+        let file: File = "test/test.test".parse().unwrap();
+        assert_eq!(file.name, "test/test.test".to_string());
+        assert_eq!(file.relative_name, "test.test".to_string());
+        assert_eq!(file.depth, 0);
+        let file: File = "test/something/test.test".parse().unwrap();
+        assert_eq!(file.name, "test/something/test.test".to_string());
+        assert_eq!(file.relative_name, "test.test".to_string());
+        assert_eq!(file.depth, 1);
+        let file: File = "test/something/amazing/test.test".parse().unwrap();
+        assert_eq!(file.name, "test/something/amazing/test.test".to_string());
+        assert_eq!(file.relative_name, "test.test".to_string());
+        assert_eq!(file.depth, 2);
+    }
 
     #[test]
     fn test_nodes_to_vec() {
@@ -217,28 +287,14 @@ mod tests {
                 .parse()
                 .expect("test folder should be always available"),
             children: vec![],
-            files: vec![
-                File {
-                    name: "one1".to_string(),
-                },
-                File {
-                    name: "one2".to_string(),
-                },
-            ],
+            files: vec!["one1".parse().unwrap(), "one2".parse().unwrap()],
         }));
         let two = Node {
             folder: "two"
                 .parse()
                 .expect("test folder should be always available"),
             children: vec![one],
-            files: vec![
-                File {
-                    name: "two1".to_string(),
-                },
-                File {
-                    name: "two2".to_string(),
-                },
-            ],
+            files: vec!["two1".parse().unwrap(), "two2".parse().unwrap()],
         };
         let file_tree = FileTree::new(
             "root"

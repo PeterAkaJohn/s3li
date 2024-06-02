@@ -112,11 +112,15 @@ impl Component for Explorer {
                 true
             })
             .map(|tree_item| {
+                LOGGER.info(&format!("{:?}", tree_item));
                 let label = match tree_item {
-                    TreeItem::Folder(folder, _) => format!("▶ {}", folder.name),
-                    TreeItem::File(file, _) => format!("{}", file.name),
+                    TreeItem::Folder(folder, _) => format!("▶ {}", folder.relative_name),
+                    TreeItem::File(file, _) => format!("{}", file.relative_name),
                 };
-                ListItem::new(Line::from(Span::styled(label, default_style)))
+                ListItem::new(Line::from(Span::styled(
+                    tree_item.with_indentation(label),
+                    default_style,
+                )))
             })
             .collect::<Vec<ListItem>>();
 
@@ -127,5 +131,34 @@ impl Component for Explorer {
             .highlight_spacing(ratatui::widgets::HighlightSpacing::Always);
 
         f.render_stateful_widget(list, area, &mut self.list_state);
+    }
+}
+
+trait WithIndentation {
+    fn with_indentation(&self, label: String) -> String;
+}
+
+impl WithIndentation for TreeItem {
+    fn with_indentation(&self, label: String) -> String {
+        match self {
+            TreeItem::Folder(folder, _) => {
+                if folder.depth > 0 {
+                    let mut new_label = " ".repeat(folder.depth);
+                    new_label.push_str(&label);
+                    LOGGER.info(&format!("{}", &new_label));
+                    return new_label;
+                }
+                label
+            }
+            TreeItem::File(file, _) => {
+                if file.depth > 0 {
+                    let mut new_label = " ".repeat(file.depth);
+                    new_label.push_str(&label);
+                    LOGGER.info(&format!("{}", &new_label));
+                    return new_label;
+                }
+                label
+            }
+        }
     }
 }
