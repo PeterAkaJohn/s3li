@@ -30,7 +30,17 @@ impl Explorer {
         Self {
             list_state: ListState::default(),
             selected_file: None,
-            file_tree: file_tree.map(|ft| ft.tree_to_vec()).unwrap_or_default(),
+            file_tree: file_tree
+                .map(|ft| ft.tree_to_vec())
+                .unwrap_or_default()
+                .into_iter()
+                .filter(|tree_item| {
+                    if let TreeItem::Folder(folder, _) = tree_item {
+                        return folder.name != *"/";
+                    }
+                    true
+                })
+                .collect::<Vec<TreeItem>>(),
             ui_tx,
         }
     }
@@ -102,12 +112,6 @@ impl Component for Explorer {
         let list_items = self
             .file_tree
             .iter()
-            .filter(|tree_item| {
-                if let TreeItem::Folder(folder, _) = tree_item {
-                    return folder.name != *"/";
-                }
-                true
-            })
             .map(|tree_item| {
                 let label = match tree_item {
                     TreeItem::Folder(folder, _) => format!("▶ {}", folder.relative_name),
