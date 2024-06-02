@@ -111,7 +111,7 @@ impl Component for Explorer {
             .map(|tree_item| {
                 let label = match tree_item {
                     TreeItem::Folder(folder, _) => format!("▶ {}", folder.relative_name),
-                    TreeItem::File(file, _) => format!("{}", file.relative_name),
+                    TreeItem::File(file, _) => file.relative_name.to_string(),
                 };
                 ListItem::new(Line::from(Span::styled(
                     tree_item.with_indentation(label),
