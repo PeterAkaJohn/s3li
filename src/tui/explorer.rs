@@ -23,26 +23,53 @@ pub struct Explorer {
     selected_file: Option<String>,
     file_tree: Vec<TreeItem>,
     ui_tx: UnboundedSender<Action>,
+    current_folder_idx: Option<usize>,
 }
 
 impl Explorer {
-    pub fn new(file_tree: Option<FileTree>, ui_tx: UnboundedSender<Action>) -> Self {
+    pub fn new(
+        file_tree: Option<FileTree>,
+        current_folder: Option<Folder>,
+        ui_tx: UnboundedSender<Action>,
+    ) -> Self {
+        let file_tree_vec = file_tree
+            .map(|ft| ft.tree_to_vec())
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|tree_item| {
+                if let TreeItem::Folder(folder, _) = tree_item {
+                    return folder.name != *"/";
+                }
+                true
+            })
+            .collect::<Vec<TreeItem>>();
+
+        let current_folder_idx = current_folder.and_then(|val| {
+            file_tree_vec.iter().position(|tree_item| {
+                if let TreeItem::Folder(folder, _) = tree_item {
+                    *folder.name == val.name
+                } else {
+                    false
+                }
+            })
+        });
+
+        let mut list_state = ListState::default();
+        list_state.select(current_folder_idx);
         Self {
-            list_state: ListState::default(),
+            list_state,
             selected_file: None,
-            file_tree: file_tree
-                .map(|ft| ft.tree_to_vec())
-                .unwrap_or_default()
-                .into_iter()
-                .filter(|tree_item| {
-                    if let TreeItem::Folder(folder, _) = tree_item {
-                        return folder.name != *"/";
-                    }
-                    true
-                })
-                .collect::<Vec<TreeItem>>(),
+            file_tree: file_tree_vec,
             ui_tx,
+            current_folder_idx,
         }
+    }
+    pub fn set_active_idx(&mut self, active_idx: Option<usize>) {
+        self.current_folder_idx = active_idx;
+    }
+
+    pub fn get_active_idx(&self) -> Option<usize> {
+        self.current_folder_idx
     }
 }
 
@@ -72,9 +99,9 @@ impl Component for Explorer {
         }
         match key.code {
             crossterm::event::KeyCode::Enter => {
-                let selected_item = self
-                    .get_list_state_selected()
-                    .and_then(|idx| self.file_tree.get(idx));
+                let selected_idx = self.get_list_state_selected();
+                self.set_active_idx(selected_idx);
+                let selected_item = selected_idx.and_then(|idx| self.file_tree.get(idx));
                 if let Some(tree_item) = selected_item {
                     match tree_item {
                         TreeItem::Folder(folder, _) => self
@@ -87,6 +114,7 @@ impl Component for Explorer {
             }
             crossterm::event::KeyCode::Esc => {
                 self.unselect();
+                self.set_active_idx(None);
             }
             crossterm::event::KeyCode::Up | crossterm::event::KeyCode::Char('k') => {
                 self.select_previous();

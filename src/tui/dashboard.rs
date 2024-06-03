@@ -4,7 +4,7 @@ use crossterm::event::KeyEvent;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use tokio::sync::mpsc::UnboundedSender;
 
-use crate::{action::Action, store::state::AppState};
+use crate::{action::Action, logger::LOGGER, store::state::AppState};
 
 use super::{
     // accounts::Accounts,
@@ -37,7 +37,7 @@ impl Dashboard {
         let sources = Sources::new(&state.sources.available_sources, &None, ui_tx.clone());
         let accounts = Accounts::new(&state.accounts.available_accounts, &None, ui_tx.clone());
 
-        let explorer = Explorer::new(None, ui_tx.clone());
+        let explorer = Explorer::new(None, None, ui_tx.clone());
         Dashboard {
             selected_component: DashboardComponents::Accounts,
             sources,
@@ -58,7 +58,11 @@ impl Dashboard {
             &state.accounts.active_account,
             self.ui_tx.clone(),
         );
-        let explorer = Explorer::new(Some(state.explorer.file_tree.clone()), self.ui_tx.clone());
+        let explorer = Explorer::new(
+            Some(state.explorer.file_tree.clone()),
+            state.explorer.selected_folder.clone(),
+            self.ui_tx.clone(),
+        );
         Dashboard {
             selected_component: self.selected_component,
             sources,
