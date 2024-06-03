@@ -78,7 +78,6 @@ impl AwsClient {
         current_folder: Option<&str>,
     ) -> (Vec<String>, Vec<String>) {
         let prefix = current_folder.unwrap_or("");
-        LOGGER.info(&format!("prefix {}", prefix));
         let mut response = self
             .client
             .list_objects_v2()
@@ -93,7 +92,6 @@ impl AwsClient {
         while let Some(result) = response.next().await {
             match result {
                 Ok(objects) => {
-                    LOGGER.info(&format!("{:#?}", objects));
                     let mut folders = objects
                         .common_prefixes()
                         .iter()

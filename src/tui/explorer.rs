@@ -104,9 +104,9 @@ impl Component for Explorer {
                 let selected_item = selected_idx.and_then(|idx| self.file_tree.get(idx));
                 if let Some(tree_item) = selected_item {
                     match tree_item {
-                        TreeItem::Folder(folder, _) => self
+                        TreeItem::Folder(_, _) => self
                             .ui_tx
-                            .send(Action::SetExplorerFolder(folder.name.clone()))
+                            .send(Action::SetExplorerFolder(tree_item.clone()))
                             .expect("should not fail"),
                         TreeItem::File(_, _) => {}
                     }

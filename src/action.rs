@@ -1,3 +1,5 @@
+use crate::store::explorer::TreeItem;
+
 #[derive(Debug)]
 pub enum Action {
     Quit,
@@ -6,5 +8,5 @@ pub enum Action {
     Key(String),
     SetSource(usize),
     SetAccount(usize),
-    SetExplorerFolder(String),
+    SetExplorerFolder(TreeItem),
 }
