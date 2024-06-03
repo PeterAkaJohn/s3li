@@ -137,21 +137,32 @@ impl Component for Explorer {
 
         let active_style = Style::default().fg(Color::Green).bg(Color::LightBlue);
         let default_style = Style::default().fg(Color::White);
-        let list_items = self
-            .file_tree
-            .iter()
-            .map(|tree_item| {
-                let label = match tree_item {
-                    TreeItem::Folder(folder, _) => format!("▶ {}", folder.relative_name),
-                    TreeItem::File(file, _) => file.relative_name.to_string(),
-                };
-                ListItem::new(Line::from(Span::styled(
-                    tree_item.with_indentation(label),
-                    default_style,
-                )))
-            })
-            .collect::<Vec<ListItem>>();
+        let mut file_tree_iterator = self.file_tree.iter().peekable();
 
+        let mut list_items: Vec<ListItem> = vec![];
+        while let Some(tree_item) = file_tree_iterator.next() {
+            let label = match tree_item {
+                TreeItem::Folder(folder, _) => {
+                    let arrow_char = match file_tree_iterator.peek() {
+                        Some(TreeItem::Folder(_, Some(parent)))
+                        | Some(TreeItem::File(_, Some(parent))) => {
+                            if parent.name == folder.name {
+                                "▼"
+                            } else {
+                                "▶"
+                            }
+                        }
+                        _ => "▶",
+                    };
+                    format!("{} {}", arrow_char, folder.relative_name)
+                }
+                TreeItem::File(file, _) => file.relative_name.to_string(),
+            };
+            list_items.push(ListItem::new(Line::from(Span::styled(
+                tree_item.with_indentation(label),
+                default_style,
+            ))));
+        }
         let list = List::new(list_items)
             .block(container)
             .scroll_padding(2)

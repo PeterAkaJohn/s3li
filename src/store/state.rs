@@ -95,7 +95,7 @@ impl State {
                             } else {
                                 panic!("cannot be a file tree_item");
                             };
-                            LOGGER.info(&format!("{:?}", new_selected_folder));
+                            // LOGGER.info(&format!("{:?}", new_selected_folder));
                             let (files,folders) = self.client.list_objects(&self.app_state.sources.active_source.clone().unwrap(), new_selected_folder.clone().map(|folder| folder.name).as_deref()).await;
                             if let Some(folder) = new_selected_folder.clone() {
                                 self.app_state.explorer
