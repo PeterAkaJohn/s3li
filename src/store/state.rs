@@ -51,6 +51,7 @@ impl State {
             accounts: Accounts {
                 active_account: None,
                 available_accounts: accounts,
+                region: client.region.clone(),
             },
         };
         (
@@ -130,6 +131,13 @@ impl State {
                             self.app_state.sources.available_sources = if let Ok(buckets) = buckets {buckets} else {vec![]};
                             self.tx.send(self.app_state.clone())?;
                         },
+                        Action::ChangeRegion(new_region) => {
+                            LOGGER.info(&format!("{}", new_region));
+                            self.client.change_region(new_region.clone()).await;
+                            self.app_state.accounts.region = new_region.clone();
+                            self.tx.send(self.app_state.clone())?;
+                        }
+
                     }
                 }
             }

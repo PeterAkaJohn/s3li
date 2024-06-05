@@ -1,8 +1,5 @@
 use anyhow::Result;
-use aws_config::{
-    meta::region::RegionProviderChain, profile::ProfileFileCredentialsProvider,
-    retry::ProvideErrorKind, BehaviorVersion,
-};
+use aws_config::{profile::ProfileFileCredentialsProvider, BehaviorVersion, Region};
 use aws_sdk_s3::Client;
 use dirs::home_dir;
 use ini::ini;
@@ -12,6 +9,7 @@ use crate::logger::LOGGER;
 pub struct AwsClient {
     account: String,
     client: Client,
+    pub region: String,
 }
 
 impl AwsClient {
@@ -20,18 +18,30 @@ impl AwsClient {
         let client = Client::new(&config);
         Self {
             account: "default".to_string(),
+            region: "us-east-1".to_string(),
             client,
         }
     }
     pub async fn switch_account(&mut self, new_account: &str) {
         self.account = new_account.to_string();
-        let region_provider = RegionProviderChain::default_provider().or_else("us-east-1");
         let credentials_provider = ProfileFileCredentialsProvider::builder()
             .profile_name(&self.account)
             .build();
         let config = aws_config::defaults(BehaviorVersion::v2024_03_28())
             .credentials_provider(credentials_provider)
-            .region("us-east-1")
+            .region(Region::new(self.region.clone()))
+            .load()
+            .await;
+        self.client = Client::new(&config);
+    }
+    pub async fn change_region(&mut self, region: String) {
+        self.region = region;
+        let credentials_provider = ProfileFileCredentialsProvider::builder()
+            .profile_name(&self.account)
+            .build();
+        let config = aws_config::defaults(BehaviorVersion::v2024_03_28())
+            .credentials_provider(credentials_provider)
+            .region(Region::new(self.region.clone()))
             .load()
             .await;
         self.client = Client::new(&config);

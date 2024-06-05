@@ -1,24 +1,26 @@
 use ratatui::{
     layout::{Constraint, Direction, Layout},
-    widgets::{Block, Paragraph},
+    widgets::Paragraph,
 };
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::action::Action;
 
-use super::{
-    component::{Component, ComponentProps, WithContainer},
-    list::ListComponent,
-};
+use super::component::{Component, ComponentProps, WithContainer};
 
 pub struct Region {
     pub open: bool,
+    pub region: String,
     ui_tx: UnboundedSender<Action>,
 }
 
 impl Region {
-    pub fn new(ui_tx: UnboundedSender<Action>) -> Region {
-        Region { ui_tx, open: false }
+    pub fn new(region: String, ui_tx: UnboundedSender<Action>) -> Region {
+        Region {
+            ui_tx,
+            open: false,
+            region,
+        }
     }
 }
 
@@ -28,34 +30,42 @@ impl Component for Region {
     fn render(
         &mut self,
         f: &mut ratatui::prelude::Frame,
-        area: ratatui::prelude::Rect,
+        _area: ratatui::prelude::Rect,
         props: Option<ComponentProps>,
     ) {
         let layout = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([
-                Constraint::Percentage(75 / 2),
-                Constraint::Percentage(25),
-                Constraint::Percentage(75 / 2),
-            ])
+            .constraints([Constraint::Fill(1), Constraint::Max(3), Constraint::Fill(1)])
             .split(f.size());
         let center_section = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
+                Constraint::Fill(2),
+                Constraint::Fill(1),
+                Constraint::Fill(2),
             ])
             .split(layout[1])[1];
 
         let container = self.with_container("Region", &props);
-
-        let paragraph = Paragraph::new("region section").block(container);
-        f.render_widget(paragraph, center_section);
+        let input_value = Paragraph::new(self.region.clone()).block(container);
+        f.render_widget(input_value, center_section);
     }
     fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
-        if let crossterm::event::KeyCode::Esc = key.code {
-            self.open = false
-        };
+        match key.code {
+            crossterm::event::KeyCode::Esc => self.open = false,
+            crossterm::event::KeyCode::Enter => {
+                // send region to state with ui_tx
+                let _ = self.ui_tx.send(Action::ChangeRegion(self.region.clone()));
+                self.open = false;
+            }
+            crossterm::event::KeyCode::Backspace => {
+                // send region to state with ui_tx
+                self.region.pop();
+            }
+            crossterm::event::KeyCode::Char(value) => {
+                self.region.push(value);
+            }
+            _ => {}
+        }
     }
 }

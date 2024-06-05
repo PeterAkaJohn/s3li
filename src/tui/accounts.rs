@@ -38,6 +38,7 @@ impl Accounts {
     pub fn new(
         items: &Vec<String>,
         active_account: &Option<String>,
+        region: String,
         ui_tx: UnboundedSender<Action>,
     ) -> Accounts {
         Accounts {
@@ -47,7 +48,7 @@ impl Accounts {
                 active_account.to_owned(),
             ),
             ui_tx: ui_tx.clone(),
-            region: Region::new(ui_tx.clone()),
+            region: Region::new(region, ui_tx.clone()),
         }
     }
     pub fn render(

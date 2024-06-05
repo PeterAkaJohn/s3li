@@ -35,7 +35,12 @@ impl Dashboard {
         Self: Sized,
     {
         let sources = Sources::new(&state.sources.available_sources, &None, ui_tx.clone());
-        let accounts = Accounts::new(&state.accounts.available_accounts, &None, ui_tx.clone());
+        let accounts = Accounts::new(
+            &state.accounts.available_accounts,
+            &None,
+            state.accounts.region.clone(),
+            ui_tx.clone(),
+        );
 
         let explorer = Explorer::new(None, None, ui_tx.clone());
         Dashboard {
@@ -56,6 +61,7 @@ impl Dashboard {
         let accounts = Accounts::new(
             &state.accounts.available_accounts,
             &state.accounts.active_account,
+            state.accounts.region.clone(),
             self.ui_tx.clone(),
         );
         let explorer = Explorer::new(
@@ -63,6 +69,7 @@ impl Dashboard {
             state.explorer.selected_folder.clone(),
             self.ui_tx.clone(),
         );
+
         Dashboard {
             selected_component: self.selected_component,
             sources,

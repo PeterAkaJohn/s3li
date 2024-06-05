@@ -9,4 +9,5 @@ pub enum Action {
     SetSource(usize),
     SetAccount(usize),
     SetExplorerFolder(TreeItem),
+    ChangeRegion(String),
 }
