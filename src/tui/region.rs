@@ -11,6 +11,7 @@ use super::component::{Component, ComponentProps, WithContainer};
 pub struct Region {
     pub open: bool,
     pub region: String,
+    pub new_region: String,
     ui_tx: UnboundedSender<Action>,
 }
 
@@ -19,7 +20,8 @@ impl Region {
         Region {
             ui_tx,
             open: false,
-            region,
+            region: region.clone(),
+            new_region: region.clone(),
         }
     }
 }
@@ -47,23 +49,30 @@ impl Component for Region {
             .split(layout[1])[1];
 
         let container = self.with_container("Region", &props);
-        let input_value = Paragraph::new(self.region.clone()).block(container);
+        let input_value = Paragraph::new(self.new_region.clone()).block(container);
         f.render_widget(input_value, center_section);
     }
     fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
         match key.code {
-            crossterm::event::KeyCode::Esc => self.open = false,
+            crossterm::event::KeyCode::Esc => {
+                self.open = false;
+                if !self.new_region.eq(&self.region) {
+                    self.new_region.clone_from(&self.region);
+                }
+            }
             crossterm::event::KeyCode::Enter => {
                 // send region to state with ui_tx
-                let _ = self.ui_tx.send(Action::ChangeRegion(self.region.clone()));
+                let _ = self
+                    .ui_tx
+                    .send(Action::ChangeRegion(self.new_region.clone()));
                 self.open = false;
             }
             crossterm::event::KeyCode::Backspace => {
                 // send region to state with ui_tx
-                self.region.pop();
+                self.new_region.pop();
             }
             crossterm::event::KeyCode::Char(value) => {
-                self.region.push(value);
+                self.new_region.push(value);
             }
             _ => {}
         }
