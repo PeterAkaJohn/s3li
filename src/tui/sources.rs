@@ -27,7 +27,10 @@ impl Sources {
             ui_tx,
         }
     }
-    pub fn render(
+}
+
+impl Component for Sources {
+    fn render(
         &mut self,
         f: &mut ratatui::prelude::Frame,
         area: ratatui::prelude::Rect,
@@ -35,7 +38,7 @@ impl Sources {
     ) {
         self.component.render(f, area, props)
     }
-    pub fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
+    fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
         self.component.handle_key_events(key);
         if let crossterm::event::KeyCode::Enter = key.code {
             if let Some(idx) = self.component.get_active_idx() {

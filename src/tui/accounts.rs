@@ -51,7 +51,10 @@ impl Accounts {
             region: Region::new(region, ui_tx.clone()),
         }
     }
-    pub fn render(
+}
+
+impl Component for Accounts {
+    fn render(
         &mut self,
         f: &mut ratatui::prelude::Frame,
         area: ratatui::prelude::Rect,
@@ -63,7 +66,7 @@ impl Accounts {
                 .render(f, area, Some(ComponentProps { selected: true }));
         }
     }
-    pub fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
+    fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
         if self.is_popup_open() {
             //handle events region component
             self.region.handle_key_events(key);
