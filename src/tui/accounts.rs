@@ -14,7 +14,7 @@ pub struct Accounts {
     region: Region,
 }
 
-trait WithPopup {
+pub trait WithPopup {
     fn open_popup(&mut self);
     fn close_popup(&mut self);
     fn is_popup_open(&self) -> bool;

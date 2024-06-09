@@ -8,7 +8,7 @@ use crate::{action::Action, logger::LOGGER, store::state::AppState};
 
 use super::{
     // accounts::Accounts,
-    accounts::Accounts,
+    accounts::{Accounts, WithPopup},
     component::{Component, ComponentProps},
     explorer::Explorer,
     sources::Sources, // sources::Sources,
@@ -148,7 +148,11 @@ impl Component for Dashboard {
             crossterm::event::KeyCode::Left
             | crossterm::event::KeyCode::Right
             | crossterm::event::KeyCode::Char('h')
-            | crossterm::event::KeyCode::Char('l') => self.change_selected_component(),
+            | crossterm::event::KeyCode::Char('l')
+                if !self.accounts.is_popup_open() =>
+            {
+                self.change_selected_component()
+            }
             crossterm::event::KeyCode::Esc => match self.selected_component {
                 DashboardComponents::Explorer => {
                     self.explorer.handle_key_events(key);
