@@ -153,26 +153,24 @@ impl Component for Dashboard {
             {
                 self.change_selected_component()
             }
-            crossterm::event::KeyCode::Esc => match self.selected_component {
-                DashboardComponents::Explorer => {
-                    self.explorer.handle_key_events(key);
-                    self.set_sources_selected();
+            keycode => match self.selected_component {
+                DashboardComponents::Sources => match keycode {
+                    crossterm::event::KeyCode::Enter => {
+                        self.sources.handle_key_events(key);
+                        self.set_explorer_selected();
+                    }
+                    _ => self.sources.handle_key_events(key),
+                },
+                DashboardComponents::Explorer => match keycode {
+                    crossterm::event::KeyCode::Esc => {
+                        self.explorer.handle_key_events(key);
+                        self.set_sources_selected();
+                    }
+                    _ => self.explorer.handle_key_events(key),
+                },
+                DashboardComponents::Accounts => {
+                    self.accounts.handle_key_events(key);
                 }
-                DashboardComponents::Accounts => self.accounts.handle_key_events(key),
-                DashboardComponents::Sources => self.sources.handle_key_events(key),
-            },
-            crossterm::event::KeyCode::Enter => match self.selected_component {
-                DashboardComponents::Sources => {
-                    self.sources.handle_key_events(key);
-                    self.set_explorer_selected();
-                }
-                DashboardComponents::Accounts => self.accounts.handle_key_events(key),
-                DashboardComponents::Explorer => self.explorer.handle_key_events(key),
-            },
-            _ => match self.selected_component {
-                DashboardComponents::Sources => self.sources.handle_key_events(key),
-                DashboardComponents::Accounts => self.accounts.handle_key_events(key),
-                DashboardComponents::Explorer => self.explorer.handle_key_events(key),
             },
         }
     }
