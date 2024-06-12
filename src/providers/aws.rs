@@ -1,8 +1,12 @@
+mod credentials;
+
+use core::panic;
+
 use anyhow::Result;
 use aws_config::{profile::ProfileFileCredentialsProvider, BehaviorVersion, Region};
 use aws_sdk_s3::Client;
+use configparser::ini::Ini;
 use dirs::home_dir;
-use ini::ini;
 
 use crate::logger::LOGGER;
 
@@ -70,15 +74,13 @@ impl AwsClient {
             Some(credentials_path) => credentials_path,
             None => panic!("Failed to get credentials file"),
         };
-        let credentials_file = ini!(safe credentials_path);
-        match credentials_file {
+        let mut ini = Ini::new();
+        match ini.load(credentials_path) {
             Ok(credentials_file) => credentials_file
                 .keys()
                 .map(|key| key.to_string())
                 .collect::<Vec<String>>(),
-            Err(_) => {
-                panic!("Credentials file does not exists")
-            }
+            _ => panic!("failed to read credentials file"),
         }
     }
 
