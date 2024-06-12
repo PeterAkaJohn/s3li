@@ -5,8 +5,7 @@ use core::panic;
 use anyhow::Result;
 use aws_config::{profile::ProfileFileCredentialsProvider, BehaviorVersion, Region};
 use aws_sdk_s3::Client;
-use configparser::ini::Ini;
-use dirs::home_dir;
+use credentials::Credentials;
 
 use crate::logger::LOGGER;
 
@@ -62,25 +61,10 @@ impl AwsClient {
     }
 
     pub fn list_accounts() -> Vec<String> {
-        let home = home_dir();
-        let credentials_path = if let Some(home) = home {
-            let mut home_string = home.into_os_string();
-            home_string.push("/.aws/credentials");
-            home_string
-        } else {
-            panic!("Failed to find the home dir");
-        };
-        let credentials_path = match credentials_path.to_str() {
-            Some(credentials_path) => credentials_path,
-            None => panic!("Failed to get credentials file"),
-        };
-        let mut ini = Ini::new();
-        match ini.load(credentials_path) {
-            Ok(credentials_file) => credentials_file
-                .keys()
-                .map(|key| key.to_string())
-                .collect::<Vec<String>>(),
-            _ => panic!("failed to read credentials file"),
+        let credentials = Credentials::default();
+        match credentials.list_accounts() {
+            Ok(accounts) => accounts,
+            Err(_) => panic!("failed to read credentials file"),
         }
     }
 
