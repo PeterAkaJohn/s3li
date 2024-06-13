@@ -67,33 +67,33 @@ impl Credentials {
     pub fn update_account(
         &mut self,
         account_to_update: &str,
-        aws_access_key_id: String,
-        aws_secret_access_key: String,
-        aws_session_token: String,
+        aws_access_key_id: Option<String>,
+        aws_secret_access_key: Option<String>,
+        aws_session_token: Option<String>,
     ) -> Result<bool> {
         let mut config = Ini::new();
         config.load(self.file.as_str()).map_err(|e| anyhow!(e))?;
-        config.set(
-            account_to_update,
-            "aws_access_key_id",
-            Some(aws_access_key_id),
-        );
-        config.set(
-            account_to_update,
-            "aws_secret_access_key",
-            Some(aws_secret_access_key),
-        );
-        config.set(
-            account_to_update,
-            "aws_session_token",
-            Some(aws_session_token),
-        );
+        if let Some(value) = aws_access_key_id {
+            config.set(account_to_update, "aws_access_key_id", Some(value));
+        }
+        if let Some(value) = aws_secret_access_key {
+            config.set(account_to_update, "aws_secret_access_key", Some(value));
+        }
+
+        if let Some(value) = aws_session_token {
+            config.set(account_to_update, "aws_session_token", Some(value));
+        }
+
+        config.write(&self.file)?;
         Ok(true)
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+
+    use anyhow::{anyhow, Result};
     use dirs::home_dir;
 
     use super::Credentials;
@@ -108,5 +108,106 @@ mod tests {
             expected_credentials_file.into_string().unwrap()
         );
         assert!(credentials.accounts.is_empty())
+    }
+
+    macro_rules! test_resources_folder {
+        () => {
+            concat!(env!("CARGO_MANIFEST_DIR"), "/resources/test/")
+        };
+    }
+
+    fn compare_value(
+        file_path: &str,
+        section: &str,
+        entry: &str,
+        expected_value: String,
+    ) -> Result<()> {
+        let mut config = configparser::ini::Ini::new();
+        config.load(file_path).map_err(|e| anyhow!(e))?;
+
+        let config_value = config.get(section, entry);
+        assert_eq!(config_value, Some(expected_value));
+        Ok(())
+    }
+
+    #[test]
+    fn update_account_credentials() -> Result<()> {
+        let test_resources_folder = test_resources_folder!();
+        fs::create_dir_all(test_resources_folder)?;
+        let config_file_path = format!("{test_resources_folder}/update_account_credentials");
+
+        let config_file = "[test]
+aws_access_key_id=test_key
+aws_secret_access_key=test_secret
+aws_session_token=test_session
+";
+        fs::write(config_file_path.clone(), config_file)?;
+
+        let mut credentials = Credentials::new(Some(config_file_path.clone()), None);
+
+        credentials.update_account("test", Some("updated_test_key".to_string()), None, None)?;
+
+        compare_value(
+            &config_file_path,
+            "test",
+            "aws_access_key_id",
+            "updated_test_key".to_string(),
+        )?;
+        compare_value(
+            &config_file_path,
+            "test",
+            "aws_secret_access_key",
+            "test_secret".to_string(),
+        )?;
+        compare_value(
+            &config_file_path,
+            "test",
+            "aws_session_token",
+            "test_session".to_string(),
+        )?;
+
+        credentials.update_account("test", None, Some("updated_test_secret".to_string()), None)?;
+
+        compare_value(
+            &config_file_path,
+            "test",
+            "aws_access_key_id",
+            "updated_test_key".to_string(),
+        )?;
+        compare_value(
+            &config_file_path,
+            "test",
+            "aws_secret_access_key",
+            "updated_test_secret".to_string(),
+        )?;
+        compare_value(
+            &config_file_path,
+            "test",
+            "aws_session_token",
+            "test_session".to_string(),
+        )?;
+
+        credentials.update_account("test", None, None, Some("updated_test_session".to_string()))?;
+
+        compare_value(
+            &config_file_path,
+            "test",
+            "aws_access_key_id",
+            "updated_test_key".to_string(),
+        )?;
+        compare_value(
+            &config_file_path,
+            "test",
+            "aws_secret_access_key",
+            "updated_test_secret".to_string(),
+        )?;
+        compare_value(
+            &config_file_path,
+            "test",
+            "aws_session_token",
+            "updated_test_session".to_string(),
+        )?;
+
+        Ok(())
     }
 }
