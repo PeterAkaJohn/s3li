@@ -269,15 +269,15 @@ mod tests {
         let file: File = "test/test.test".parse().unwrap();
         assert_eq!(file.name, "test/test.test".to_string());
         assert_eq!(file.relative_name, "test.test".to_string());
-        assert_eq!(file.depth, 0);
+        assert_eq!(file.depth, 1);
         let file: File = "test/something/test.test".parse().unwrap();
         assert_eq!(file.name, "test/something/test.test".to_string());
         assert_eq!(file.relative_name, "test.test".to_string());
-        assert_eq!(file.depth, 1);
+        assert_eq!(file.depth, 2);
         let file: File = "test/something/amazing/test.test".parse().unwrap();
         assert_eq!(file.name, "test/something/amazing/test.test".to_string());
         assert_eq!(file.relative_name, "test.test".to_string());
-        assert_eq!(file.depth, 2);
+        assert_eq!(file.depth, 3);
     }
 
     #[test]
