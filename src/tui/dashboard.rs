@@ -8,25 +8,30 @@ use crate::{action::Action, logger::LOGGER, store::state::AppState};
 
 use super::{
     // accounts::Accounts,
-    accounts::{Accounts, WithPopup},
+    accounts::Accounts,
     component::{Component, ComponentProps},
     explorer::Explorer,
+    region::{Region, WithPopup},
     sources::Sources, // sources::Sources,
 };
 
 pub struct Dashboard {
     selected_component: DashboardComponents,
+    previous_selected_component: DashboardComponents,
     sources: Sources,
     accounts: Accounts,
     explorer: Explorer,
+    region: Region,
     ui_tx: UnboundedSender<Action>,
     aside_constraints: [Constraint; 2],
 }
 
+#[derive(Clone)]
 enum DashboardComponents {
     Sources,
     Accounts,
     Explorer,
+    Region,
 }
 
 impl Dashboard {
@@ -35,19 +40,17 @@ impl Dashboard {
         Self: Sized,
     {
         let sources = Sources::new(&state.sources.available_sources, &None, ui_tx.clone());
-        let accounts = Accounts::new(
-            &state.accounts.available_accounts,
-            &None,
-            state.accounts.region.clone(),
-            ui_tx.clone(),
-        );
+        let accounts = Accounts::new(&state.accounts.available_accounts, &None, ui_tx.clone());
+        let region = Region::new(state.accounts.region.clone(), ui_tx.clone());
 
         let explorer = Explorer::new(None, None, ui_tx.clone());
         Dashboard {
             selected_component: DashboardComponents::Accounts,
+            previous_selected_component: DashboardComponents::Accounts,
             sources,
             accounts,
             explorer,
+            region,
             ui_tx,
             aside_constraints: [Constraint::Length(3), Constraint::Fill(1)],
         }
@@ -61,7 +64,6 @@ impl Dashboard {
         let accounts = Accounts::new(
             &state.accounts.available_accounts,
             &state.accounts.active_account,
-            state.accounts.region.clone(),
             self.ui_tx.clone(),
         );
         let explorer = Explorer::new(
@@ -70,11 +72,15 @@ impl Dashboard {
             self.ui_tx.clone(),
         );
 
+        let region = Region::new(state.accounts.region.clone(), self.ui_tx.clone());
+
         Dashboard {
             selected_component: self.selected_component,
+            previous_selected_component: self.previous_selected_component,
             sources,
             accounts,
             explorer,
+            region,
             ui_tx: self.ui_tx,
             aside_constraints: self.aside_constraints,
         }
@@ -82,10 +88,12 @@ impl Dashboard {
     fn change_selected_component(&mut self) {
         match self.selected_component {
             DashboardComponents::Sources => {
+                self.previous_selected_component = DashboardComponents::Sources;
                 self.selected_component = DashboardComponents::Accounts;
                 self.aside_constraints = [Constraint::Length(3), Constraint::Fill(1)]
             }
             DashboardComponents::Accounts => {
+                self.previous_selected_component = DashboardComponents::Accounts;
                 self.selected_component = DashboardComponents::Sources;
                 self.aside_constraints = [Constraint::Fill(1), Constraint::Length(3)]
             }
@@ -98,6 +106,13 @@ impl Dashboard {
     }
     fn set_sources_selected(&mut self) {
         self.selected_component = DashboardComponents::Sources;
+    }
+    fn set_region_selected(&mut self) {
+        self.previous_selected_component = self.selected_component.clone();
+        self.selected_component = DashboardComponents::Region;
+    }
+    fn set_previous_selected_component(&mut self) {
+        self.selected_component = self.previous_selected_component.clone();
     }
 }
 
@@ -124,14 +139,23 @@ impl Component for Dashboard {
                 selected: matches!(
                     self.selected_component,
                     DashboardComponents::Sources | DashboardComponents::Explorer
-                ),
+                ) | (self.region.is_popup_open()
+                    && matches!(
+                        self.previous_selected_component,
+                        DashboardComponents::Sources
+                    )),
             }),
         );
         self.accounts.render(
             f,
             accounts,
             Some(ComponentProps {
-                selected: matches!(self.selected_component, DashboardComponents::Accounts),
+                selected: matches!(self.selected_component, DashboardComponents::Accounts)
+                    | (self.region.is_popup_open()
+                        && matches!(
+                            self.previous_selected_component,
+                            DashboardComponents::Accounts
+                        )),
             }),
         );
         self.explorer.render(
@@ -141,36 +165,59 @@ impl Component for Dashboard {
                 selected: matches!(self.selected_component, DashboardComponents::Explorer),
             }),
         );
+        if self.region.is_popup_open() {
+            self.region.render(
+                f,
+                main,
+                Some(ComponentProps {
+                    selected: matches!(self.selected_component, DashboardComponents::Region),
+                }),
+            )
+        }
     }
 
     fn handle_key_events(&mut self, key: KeyEvent) {
-        match key.code {
-            crossterm::event::KeyCode::Left
-            | crossterm::event::KeyCode::Right
-            | crossterm::event::KeyCode::Char('h')
-            | crossterm::event::KeyCode::Char('l')
-                if !self.accounts.is_popup_open() =>
-            {
-                self.change_selected_component()
-            }
-            keycode => match self.selected_component {
-                DashboardComponents::Sources => match keycode {
-                    crossterm::event::KeyCode::Enter => {
-                        self.sources.handle_key_events(key);
-                        self.set_explorer_selected();
-                    }
-                    _ => self.sources.handle_key_events(key),
-                },
-                DashboardComponents::Explorer => match keycode {
-                    crossterm::event::KeyCode::Esc => {
-                        self.explorer.handle_key_events(key);
-                        self.set_sources_selected();
-                    }
-                    _ => self.explorer.handle_key_events(key),
-                },
-                DashboardComponents::Accounts => {
-                    self.accounts.handle_key_events(key);
+        let keycode = key.code;
+        match self.selected_component {
+            DashboardComponents::Sources => match keycode {
+                crossterm::event::KeyCode::Left
+                | crossterm::event::KeyCode::Right
+                | crossterm::event::KeyCode::Char('h')
+                | crossterm::event::KeyCode::Char('l') => self.change_selected_component(),
+                crossterm::event::KeyCode::Char('r') => {
+                    self.set_region_selected();
+                    self.region.handle_key_events(key);
                 }
+                crossterm::event::KeyCode::Enter => {
+                    self.sources.handle_key_events(key);
+                    self.set_explorer_selected();
+                }
+                _ => self.sources.handle_key_events(key),
+            },
+            DashboardComponents::Explorer => match keycode {
+                crossterm::event::KeyCode::Esc => {
+                    self.explorer.handle_key_events(key);
+                    self.set_sources_selected();
+                }
+                _ => self.explorer.handle_key_events(key),
+            },
+            DashboardComponents::Accounts => match keycode {
+                crossterm::event::KeyCode::Left
+                | crossterm::event::KeyCode::Right
+                | crossterm::event::KeyCode::Char('h')
+                | crossterm::event::KeyCode::Char('l') => self.change_selected_component(),
+                crossterm::event::KeyCode::Char('r') => {
+                    self.set_region_selected();
+                    self.region.handle_key_events(key);
+                }
+                _ => self.accounts.handle_key_events(key),
+            },
+            DashboardComponents::Region => match keycode {
+                crossterm::event::KeyCode::Esc => {
+                    self.region.handle_key_events(key);
+                    self.set_previous_selected_component();
+                }
+                _ => self.region.handle_key_events(key),
             },
         }
     }

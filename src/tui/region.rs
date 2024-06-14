@@ -26,6 +26,26 @@ impl Region {
     }
 }
 
+pub trait WithPopup {
+    fn open_popup(&mut self);
+    fn close_popup(&mut self);
+    fn is_popup_open(&self) -> bool;
+}
+
+impl WithPopup for Region {
+    fn open_popup(&mut self) {
+        self.open = true;
+    }
+
+    fn close_popup(&mut self) {
+        self.open = false;
+    }
+
+    fn is_popup_open(&self) -> bool {
+        self.open
+    }
+}
+
 impl WithContainer<'_> for Region {}
 
 impl Component for Region {
@@ -53,6 +73,9 @@ impl Component for Region {
         f.render_widget(input_value, center_section);
     }
     fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
+        if !self.is_popup_open() && key.code == crossterm::event::KeyCode::Char('r') {
+            return self.open_popup();
+        }
         match key.code {
             crossterm::event::KeyCode::Esc => {
                 self.open = false;
