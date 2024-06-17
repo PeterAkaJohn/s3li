@@ -1,4 +1,6 @@
-use anyhow::{anyhow, Ok, Result};
+use std::collections::HashMap;
+
+use anyhow::{anyhow, Result};
 use configparser::ini::Ini;
 use dirs::home_dir;
 
@@ -86,6 +88,18 @@ impl Credentials {
 
         config.write(&self.file)?;
         Ok(true)
+    }
+
+    pub fn get_properties(&self, account_to_get: &str) -> HashMap<String, Option<String>> {
+        let mut config = Ini::new();
+        let map = config.load(self.file.as_str()).map_err(|e| anyhow!(e));
+        match map {
+            Ok(actualmap) => actualmap
+                .get(account_to_get)
+                .unwrap_or(&HashMap::<String, Option<String>>::new())
+                .clone(),
+            Err(_) => HashMap::new(),
+        }
     }
 }
 
@@ -207,6 +221,54 @@ aws_session_token=test_session
             "aws_session_token",
             "updated_test_session".to_string(),
         )?;
+
+        Ok(())
+    }
+    #[test]
+    fn test_get_properties() -> Result<()> {
+        let test_resources_folder = test_resources_folder!();
+        fs::create_dir_all(test_resources_folder)?;
+        let config_file_path = format!("{test_resources_folder}/get_properties");
+
+        let config_file = "[test]
+aws_access_key_id=test_key
+aws_secret_access_key=test_secret
+aws_session_token=test_session
+";
+        fs::write(config_file_path.clone(), config_file)?;
+
+        let credentials = Credentials::new(Some(config_file_path.clone()), None);
+
+        let properties = credentials.get_properties("test");
+
+        assert!(properties.get("aws_access_key_id").is_some());
+        assert!(properties.get("aws_secret_access_key").is_some());
+        assert!(properties.get("aws_session_token").is_some());
+
+        assert_eq!(
+            properties
+                .get("aws_access_key_id")
+                .unwrap()
+                .clone()
+                .unwrap(),
+            "test_key"
+        );
+        assert_eq!(
+            properties
+                .get("aws_secret_access_key")
+                .unwrap()
+                .clone()
+                .unwrap(),
+            "test_secret"
+        );
+        assert_eq!(
+            properties
+                .get("aws_session_token")
+                .unwrap()
+                .clone()
+                .unwrap(),
+            "test_session"
+        );
 
         Ok(())
     }
