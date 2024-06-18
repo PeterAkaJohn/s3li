@@ -40,8 +40,14 @@ impl State {
     pub async fn new() -> (Self, UnboundedReceiver<AppState>) {
         let (tx, rx) = mpsc::unbounded_channel();
         let client = AwsClient::new().await;
-        let mut accounts = AwsClient::list_accounts();
-        accounts.sort();
+        let account_map = client.list_accounts();
+
+        let mut available_accounts: Vec<String> = account_map
+            .clone()
+            .keys()
+            .map(|key| key.to_string())
+            .collect();
+        available_accounts.sort();
         let app_state = AppState {
             sources: Sources {
                 available_sources: vec![],
@@ -50,7 +56,8 @@ impl State {
             explorer: Explorer::new(),
             accounts: Accounts {
                 active_account: None,
-                available_accounts: accounts,
+                account_map: account_map.clone(),
+                available_accounts,
                 region: client.region.clone(),
             },
         };
@@ -132,10 +139,42 @@ impl State {
                             self.tx.send(self.app_state.clone())?;
                         },
                         Action::ChangeRegion(new_region) => {
-                            LOGGER.info(&format!("{}", new_region));
                             self.client.change_region(new_region.clone()).await;
                             self.app_state.accounts.region = new_region.clone();
                             self.tx.send(self.app_state.clone())?;
+                        }
+                        Action::RefreshCredentials => {
+
+                            let account_map = self.client.list_accounts();
+
+                            self.app_state.accounts.account_map = account_map.clone();
+                            let mut available_accounts: Vec<String> = account_map
+                                .clone()
+                                .keys()
+                                .map(|key| key.to_string())
+                                .collect();
+                            available_accounts.sort();
+                            self.app_state.accounts.available_accounts = available_accounts;
+
+                            self.tx.send(self.app_state.clone())?;
+
+                        }
+
+                        Action::EditCredentials(account_idx, properties) => {
+                            let account = self.app_state.accounts.available_accounts.get(account_idx).map(|val| val.as_str()).unwrap();
+
+                            let account_map = self.client.update_account(account, properties);
+                            self.app_state.accounts.account_map = account_map.clone();
+                            let mut available_accounts: Vec<String> = account_map
+                                .clone()
+                                .keys()
+                                .map(|key| key.to_string())
+                                .collect();
+                            available_accounts.sort();
+                            self.app_state.accounts.available_accounts = available_accounts;
+
+                            self.tx.send(self.app_state.clone())?;
+
                         }
 
                     }

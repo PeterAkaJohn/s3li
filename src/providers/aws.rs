@@ -1,19 +1,23 @@
 mod credentials;
 
 use core::panic;
+use std::collections::HashMap;
 
 use anyhow::Result;
 use aws_config::{profile::ProfileFileCredentialsProvider, BehaviorVersion, Region};
 use aws_sdk_s3::Client;
-use credentials::Credentials;
+pub use credentials::{AuthProperties, Credentials};
 
 use crate::logger::LOGGER;
 
 pub struct AwsClient {
     account: String,
     client: Client,
+    credentials: Credentials,
     pub region: String,
 }
+
+pub type AccountMap = HashMap<String, HashMap<String, Option<String>>>;
 
 impl AwsClient {
     pub async fn new() -> Self {
@@ -22,6 +26,7 @@ impl AwsClient {
         Self {
             account: "default".to_string(),
             region: "us-east-1".to_string(),
+            credentials: Credentials::default(),
             client,
         }
     }
@@ -60,11 +65,24 @@ impl AwsClient {
         Ok(buckets)
     }
 
-    pub fn list_accounts() -> Vec<String> {
+    pub fn list_accounts(&self) -> AccountMap {
         let credentials = Credentials::default();
         match credentials.list_accounts() {
-            Ok(accounts) => accounts,
+            Ok(accounts) => accounts
+                .iter()
+                .map(|account| {
+                    let account_properties = credentials.get_properties(account);
+                    (account.to_string(), account_properties)
+                })
+                .collect::<AccountMap>(),
             Err(_) => panic!("failed to read credentials file"),
+        }
+    }
+
+    pub fn update_account(&mut self, account: &str, properties: AuthProperties) -> AccountMap {
+        match self.credentials.update_account(account, properties) {
+            Ok(_) => self.list_accounts(),
+            Err(_) => panic!("failed to update account"),
         }
     }
 

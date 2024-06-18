@@ -1,4 +1,4 @@
-use crate::store::explorer::TreeItem;
+use crate::{providers::AuthProperties, store::explorer::TreeItem};
 
 #[derive(Debug)]
 pub enum Action {
@@ -10,4 +10,6 @@ pub enum Action {
     SetAccount(usize),
     SetExplorerFolder(TreeItem),
     ChangeRegion(String),
+    RefreshCredentials,
+    EditCredentials(usize, AuthProperties),
 }

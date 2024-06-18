@@ -9,6 +9,8 @@ pub struct Credentials {
     accounts: Vec<String>,
 }
 
+pub type AuthProperties = HashMap<String, Option<String>>;
+
 impl Default for Credentials {
     fn default() -> Self {
         let home = home_dir();
@@ -69,22 +71,15 @@ impl Credentials {
     pub fn update_account(
         &mut self,
         account_to_update: &str,
-        aws_access_key_id: Option<String>,
-        aws_secret_access_key: Option<String>,
-        aws_session_token: Option<String>,
+        properties: AuthProperties,
     ) -> Result<bool> {
         let mut config = Ini::new();
         config.load(self.file.as_str()).map_err(|e| anyhow!(e))?;
-        if let Some(value) = aws_access_key_id {
-            config.set(account_to_update, "aws_access_key_id", Some(value));
-        }
-        if let Some(value) = aws_secret_access_key {
-            config.set(account_to_update, "aws_secret_access_key", Some(value));
-        }
-
-        if let Some(value) = aws_session_token {
-            config.set(account_to_update, "aws_session_token", Some(value));
-        }
+        properties.iter().for_each(|(key, val)| {
+            if let Some(value) = val {
+                config.set(account_to_update, key, Some(value.to_owned()));
+            }
+        });
 
         config.write(&self.file)?;
         Ok(true)
@@ -105,7 +100,7 @@ impl Credentials {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
+    use std::{collections::HashMap, fs};
 
     use anyhow::{anyhow, Result};
     use dirs::home_dir;
@@ -159,7 +154,13 @@ aws_session_token=test_session
 
         let mut credentials = Credentials::new(Some(config_file_path.clone()), None);
 
-        credentials.update_account("test", Some("updated_test_key".to_string()), None, None)?;
+        let mut properties = HashMap::new();
+        properties.insert(
+            "aws_access_key_id".to_string(),
+            Some("updated_test_key".to_string()),
+        );
+
+        credentials.update_account("test", properties)?;
 
         compare_value(
             &config_file_path,
@@ -180,7 +181,12 @@ aws_session_token=test_session
             "test_session".to_string(),
         )?;
 
-        credentials.update_account("test", None, Some("updated_test_secret".to_string()), None)?;
+        let mut properties = HashMap::new();
+        properties.insert(
+            "aws_secret_access_key".to_string(),
+            Some("updated_test_secret".to_string()),
+        );
+        credentials.update_account("test", properties)?;
 
         compare_value(
             &config_file_path,
@@ -201,7 +207,12 @@ aws_session_token=test_session
             "test_session".to_string(),
         )?;
 
-        credentials.update_account("test", None, None, Some("updated_test_session".to_string()))?;
+        let mut properties = HashMap::new();
+        properties.insert(
+            "aws_session_token".to_string(),
+            Some("updated_test_session".to_string()),
+        );
+        credentials.update_account("test", properties)?;
 
         compare_value(
             &config_file_path,
