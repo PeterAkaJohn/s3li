@@ -1,7 +1,7 @@
 mod credentials;
 
 use core::panic;
-use std::collections::HashMap;
+use std::{collections::HashMap, fs::OpenOptions, io::Write};
 
 use anyhow::Result;
 use aws_config::{profile::ProfileFileCredentialsProvider, BehaviorVersion, Region};
@@ -84,6 +84,25 @@ impl AwsClient {
             Ok(_) => self.list_accounts(),
             Err(_) => panic!("failed to update account"),
         }
+    }
+
+    pub async fn download_file(&self, bucket: &str, file_key: &str) -> Result<bool> {
+        let mut destination_file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open("./download")?;
+
+        let object = self
+            .client
+            .get_object()
+            .bucket(bucket)
+            .key(file_key)
+            .send()
+            .await?;
+        let bytes = object.body.collect().await?.into_bytes();
+        destination_file.write_all(&bytes)?;
+        Ok(true)
     }
 
     pub async fn list_objects(

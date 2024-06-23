@@ -122,6 +122,13 @@ impl Component for Explorer {
             crossterm::event::KeyCode::Down | crossterm::event::KeyCode::Char('j') => {
                 self.select_next();
             }
+            crossterm::event::KeyCode::Char('d') => {
+                let selected_idx = self.get_list_state_selected();
+                let selected_item = selected_idx.and_then(|idx| self.file_tree.get(idx));
+                if let Some(TreeItem::File(file, _)) = selected_item {
+                    self.ui_tx.send(Action::DownloadFile(file.name.clone()));
+                }
+            }
 
             _ => {}
         };
