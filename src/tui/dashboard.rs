@@ -217,8 +217,12 @@ impl Component for Dashboard {
                     self.region.handle_key_events(key);
                     self.set_previous_selected_component();
                 }
+                crossterm::event::KeyCode::Enter => {
+                    self.region.handle_key_events(key);
+                    self.selected_component = self.previous_selected_component.clone();
+                }
                 _ => self.region.handle_key_events(key),
             },
-        }
+        };
     }
 }
