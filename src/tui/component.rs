@@ -7,6 +7,7 @@ use ratatui::{
     Frame,
 };
 
+#[derive(Clone)]
 pub struct ComponentProps {
     pub selected: bool,
 }

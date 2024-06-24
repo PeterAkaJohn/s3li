@@ -77,6 +77,12 @@ impl ListComponent<String> {
     pub fn get_active_idx(&self) -> Option<usize> {
         self.active_idx
     }
+
+    pub fn get_selected_item_value(&self) -> &str {
+        self.items
+            .get(self.list_state.selected().expect("should always be valid"))
+            .expect("should always exist")
+    }
 }
 
 impl WithList for ListComponent<String> {

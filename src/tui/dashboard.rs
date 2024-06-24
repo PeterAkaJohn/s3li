@@ -7,12 +7,12 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::{action::Action, logger::LOGGER, store::state::AppState};
 
 use super::{
-    // accounts::Accounts,
     accounts::Accounts,
     component::{Component, ComponentProps},
     explorer::Explorer,
-    region::{Region, WithPopup},
-    sources::Sources, // sources::Sources,
+    popup::WithPopup,
+    region::Region,
+    sources::Sources,
 };
 
 pub struct Dashboard {
@@ -40,7 +40,12 @@ impl Dashboard {
         Self: Sized,
     {
         let sources = Sources::new(&state.sources.available_sources, &None, ui_tx.clone());
-        let accounts = Accounts::new(&state.accounts.available_accounts, &None, ui_tx.clone());
+        let accounts = Accounts::new(
+            &state.accounts.available_accounts,
+            state.accounts.account_map.clone(),
+            &None,
+            ui_tx.clone(),
+        );
         let region = Region::new(state.accounts.region.clone(), ui_tx.clone());
 
         let explorer = Explorer::new(None, None, ui_tx.clone());
@@ -63,6 +68,7 @@ impl Dashboard {
         );
         let accounts = Accounts::new(
             &state.accounts.available_accounts,
+            state.accounts.account_map.clone(),
             &state.accounts.active_account,
             self.ui_tx.clone(),
         );

@@ -6,7 +6,10 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::action::Action;
 
-use super::component::{Component, ComponentProps, WithContainer};
+use super::{
+    component::{Component, ComponentProps, WithContainer},
+    popup::WithPopup,
+};
 
 pub struct Region {
     pub open: bool,
@@ -26,22 +29,12 @@ impl Region {
     }
 }
 
-pub trait WithPopup {
-    fn open_popup(&mut self);
-    fn close_popup(&mut self);
-    fn is_popup_open(&self) -> bool;
-}
-
 impl WithPopup for Region {
-    fn open_popup(&mut self) {
-        self.open = true;
+    fn set_popup_state(&mut self, open: bool) {
+        self.open = open;
     }
 
-    fn close_popup(&mut self) {
-        self.open = false;
-    }
-
-    fn is_popup_open(&self) -> bool {
+    fn get_popup_state(&self) -> bool {
         self.open
     }
 }
