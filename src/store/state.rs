@@ -176,11 +176,11 @@ impl State {
                             self.tx.send(self.app_state.clone())?;
 
                         }
-                        Action::DownloadFile(key) => {
+                        Action::DownloadFile(key, file_name) => {
                             let selected_bucket = &self.app_state.sources.active_source;
                             if let Some(bucket) = selected_bucket {
 
-                                if let Err(e) = self.client.download_file(bucket, &key).await {
+                                if let Err(e) = self.client.download_file(bucket, &key, &file_name).await {
 
                                 let _ = LOGGER.info(&format!("error downloading file {key}"));
                                 let _ = LOGGER.info(&format!("{:?}", e));

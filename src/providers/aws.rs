@@ -86,12 +86,17 @@ impl AwsClient {
         }
     }
 
-    pub async fn download_file(&self, bucket: &str, file_key: &str) -> Result<bool> {
+    pub async fn download_file(
+        &self,
+        bucket: &str,
+        file_key: &str,
+        file_name: &str,
+    ) -> Result<bool> {
         let mut destination_file = OpenOptions::new()
             .write(true)
             .create(true)
             .truncate(true)
-            .open("./download")?;
+            .open(file_name)?;
 
         let object = self
             .client

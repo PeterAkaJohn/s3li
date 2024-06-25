@@ -1,4 +1,7 @@
+mod download;
+
 use crossterm::event::KeyEventKind;
+use download::Download;
 use ratatui::{
     style::{Color, Style},
     text::{Line, Span},
@@ -15,6 +18,7 @@ use crate::{
 use super::{
     component::{Component, ComponentProps, WithContainer},
     list::WithList,
+    popup::WithPopup,
 };
 
 #[derive(Debug)]
@@ -24,6 +28,7 @@ pub struct Explorer {
     file_tree: Vec<TreeItem>,
     ui_tx: UnboundedSender<Action>,
     current_folder_idx: Option<usize>,
+    download_component: Download,
 }
 
 impl Explorer {
@@ -60,8 +65,9 @@ impl Explorer {
             list_state,
             selected_file: None,
             file_tree: file_tree_vec,
-            ui_tx,
+            ui_tx: ui_tx.clone(),
             current_folder_idx,
+            download_component: Download::new(ui_tx.clone()),
         }
     }
     pub fn set_active_idx(&mut self, active_idx: Option<usize>) {
@@ -97,6 +103,10 @@ impl Component for Explorer {
         if self.file_tree.is_empty() {
             return;
         }
+        if self.download_component.is_popup_open() {
+            self.download_component.handle_key_events(key);
+            return;
+        }
         match key.code {
             crossterm::event::KeyCode::Enter => {
                 let selected_idx = self.get_list_state_selected();
@@ -126,7 +136,7 @@ impl Component for Explorer {
                 let selected_idx = self.get_list_state_selected();
                 let selected_item = selected_idx.and_then(|idx| self.file_tree.get(idx));
                 if let Some(TreeItem::File(file, _)) = selected_item {
-                    self.ui_tx.send(Action::DownloadFile(file.name.clone()));
+                    self.download_component.init(file.name.clone());
                 }
             }
 
@@ -178,6 +188,10 @@ impl Component for Explorer {
             .highlight_style(active_style)
             .highlight_spacing(ratatui::widgets::HighlightSpacing::Always);
         f.render_stateful_widget(list, area, &mut self.list_state);
+
+        if self.download_component.is_popup_open() {
+            self.download_component.render(f, area, props);
+        }
     }
 }
 

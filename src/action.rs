@@ -9,7 +9,7 @@ pub enum Action {
     SetSource(usize),
     SetAccount(usize),
     SetExplorerFolder(TreeItem),
-    DownloadFile(String),
+    DownloadFile(String, String),
     ChangeRegion(String),
     RefreshCredentials,
     EditCredentials(usize, AuthProperties),
