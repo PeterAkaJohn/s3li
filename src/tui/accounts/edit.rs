@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use ratatui::{
-    layout::{Constraint, Direction, Layout},
+    layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Style, Stylize},
-    widgets::{Block, Borders, Paragraph, Wrap},
+    widgets::{Block, BorderType, Borders, Paragraph, Wrap},
 };
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -71,7 +71,7 @@ impl Component for EditAccount {
         &mut self,
         f: &mut ratatui::prelude::Frame,
         _area: ratatui::prelude::Rect,
-        props: Option<crate::tui::component::ComponentProps>,
+        props: Option<ComponentProps>,
     ) {
         let name = &self.account_to_edit;
         if name.is_none() {
@@ -92,7 +92,7 @@ impl Component for EditAccount {
                 .constraints(
                     self.new_properties
                         .keys()
-                        .map(|_| Constraint::Fill(1))
+                        .map(|_| Constraint::Max(3))
                         .collect::<Vec<Constraint>>(),
                 )
                 .split(layout[1]);
@@ -104,28 +104,20 @@ impl Component for EditAccount {
                     if let Some(value) = value {
                         let input_sections = Layout::default()
                             .direction(Direction::Horizontal)
-                            .constraints([Constraint::Percentage(20), Constraint::Fill(1)])
+                            .constraints([Constraint::Fill(1)])
                             .split(*property_area);
-                        let input_label = Paragraph::new(key.to_string())
-                            .wrap(Wrap::default())
-                            .block(Block::new().borders(Borders::ALL));
                         let input_value = Paragraph::new(value.to_string())
                             .wrap(Wrap::default())
-                            .block(Block::new().borders(Borders::ALL));
-                        f.render_widget(input_label, input_sections[0]);
-                        f.render_widget(input_value, input_sections[1]);
+                            .block(
+                                Block::new()
+                                    .title(key.to_string())
+                                    .title_alignment(Alignment::Center)
+                                    .borders(Borders::ALL)
+                                    .border_type(BorderType::Rounded),
+                            );
+                        f.render_widget(input_value, input_sections[0]);
                     }
                 });
-
-            let inner_layout = Layout::default()
-                .margin(2)
-                .direction(Direction::Vertical)
-                .constraints([Constraint::Fill(1); 3])
-                .split(layout[1]);
-
-            let test = Paragraph::new("amazing");
-
-            f.render_widget(test, inner_layout[0]);
         }
     }
 }
