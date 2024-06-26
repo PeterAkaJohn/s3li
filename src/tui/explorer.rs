@@ -73,10 +73,6 @@ impl Explorer {
     pub fn set_active_idx(&mut self, active_idx: Option<usize>) {
         self.current_folder_idx = active_idx;
     }
-
-    pub fn get_active_idx(&self) -> Option<usize> {
-        self.current_folder_idx
-    }
 }
 
 impl WithContainer<'_> for Explorer {}
