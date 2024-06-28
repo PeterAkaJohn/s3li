@@ -10,6 +10,7 @@ use super::{
     accounts::Accounts,
     component::{Component, ComponentProps},
     explorer::Explorer,
+    notifications::NotificationsUI,
     popup::WithPopup,
     region::Region,
     sources::Sources,
@@ -22,6 +23,7 @@ pub struct Dashboard {
     accounts: Accounts,
     explorer: Explorer,
     region: Region,
+    notifications: NotificationsUI,
     ui_tx: UnboundedSender<Action>,
     aside_constraints: [Constraint; 2],
 }
@@ -49,6 +51,7 @@ impl Dashboard {
         let region = Region::new(state.accounts.region.clone(), ui_tx.clone());
 
         let explorer = Explorer::new(None, None, ui_tx.clone());
+        let notifications = NotificationsUI::new(state.notifications.clone());
         Dashboard {
             selected_component: DashboardComponents::Accounts,
             previous_selected_component: DashboardComponents::Accounts,
@@ -56,6 +59,7 @@ impl Dashboard {
             accounts,
             explorer,
             region,
+            notifications,
             ui_tx,
             aside_constraints: [Constraint::Length(3), Constraint::Fill(1)],
         }
@@ -79,6 +83,7 @@ impl Dashboard {
         );
 
         let region = Region::new(state.accounts.region.clone(), self.ui_tx.clone());
+        let notifications = NotificationsUI::new(state.notifications.clone());
 
         Dashboard {
             selected_component: self.selected_component,
@@ -87,6 +92,7 @@ impl Dashboard {
             accounts,
             explorer,
             region,
+            notifications,
             ui_tx: self.ui_tx,
             aside_constraints: self.aside_constraints,
         }
@@ -124,10 +130,17 @@ impl Dashboard {
 
 impl Component for Dashboard {
     fn render(&mut self, f: &mut ratatui::prelude::Frame, _area: Rect, _: Option<ComponentProps>) {
+        let [content, notification_section] = *Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Fill(1), Constraint::Length(2)])
+            .split(f.size())
+        else {
+            panic!("layout needs to have 2 chunks")
+        };
         let [aside, main] = *Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(15), Constraint::Percentage(85)])
-            .split(f.size())
+            .split(content)
         else {
             panic!("layout needs to have 2 chunks")
         };
@@ -171,6 +184,9 @@ impl Component for Dashboard {
                 selected: matches!(self.selected_component, DashboardComponents::Explorer),
             }),
         );
+
+        self.notifications.render(f, notification_section, None);
+
         if self.region.is_popup_open() {
             self.region.render(
                 f,

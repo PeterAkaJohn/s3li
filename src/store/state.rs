@@ -1,5 +1,3 @@
-use core::panic;
-
 use anyhow::Result;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 
@@ -12,7 +10,9 @@ use crate::{
 
 use super::{
     accounts::Accounts,
+    action_manager::ActionManager,
     explorer::{Explorer, FileTree},
+    notifications::Notifications,
     sources::Sources,
 };
 
@@ -21,6 +21,8 @@ pub struct AppState {
     pub sources: Sources,
     pub accounts: Accounts,
     pub explorer: Explorer,
+    pub action_manager: ActionManager,
+    pub notifications: Notifications,
 }
 
 impl LogToFile for AppState {
@@ -60,6 +62,8 @@ impl State {
                 available_accounts,
                 region: client.region.clone(),
             },
+            action_manager: ActionManager::default(),
+            notifications: Notifications::default(),
         };
         (
             Self {
@@ -78,6 +82,7 @@ impl State {
         loop {
             tokio::select! {
                 Some(action) = ui_rx.recv() => {
+                    self.app_state.action_manager.push(action.clone());
                     match action {
                         Action::Quit => break Ok(()),
                         Action::Tick => {},
@@ -103,7 +108,6 @@ impl State {
                             } else {
                                 panic!("cannot be a file tree_item");
                             };
-                            // LOGGER.info(&format!("{:?}", new_selected_folder));
                             let (files,folders) = self.client.list_objects(&self.app_state.sources.active_source.clone().unwrap(), new_selected_folder.clone().map(|folder| folder.name).as_deref()).await;
                             if let Some(folder) = new_selected_folder.clone() {
                                 self.app_state.explorer
@@ -116,6 +120,9 @@ impl State {
                                 self.app_state.explorer.file_tree = file_tree;
                             }
                             self.app_state.explorer.selected_folder = new_selected_folder;
+                            if let Some(folder) = &self.app_state.explorer.selected_folder {
+                                self.app_state.notifications.push(format!("Folder {} has been selected", folder.name), false);
+                            }
                             self.tx.send(self.app_state.clone())?;
                         },
                         Action::SetSource(source_idx) => {
@@ -128,6 +135,9 @@ impl State {
                                 files.iter().map(|file_key| file_key.parse().expect("file creation cannot fail")).collect());
                             self.app_state.explorer.selected_folder = Some("/".parse().expect("root_folder initialization cannot fail"));
                             self.app_state.explorer.file_tree = file_tree;
+                            if let Some(bucket) = bucket {
+                                self.app_state.notifications.push(format!("Source {bucket} has been selected"), false);
+                            }
                             self.tx.send(self.app_state.clone())?;
                         },
                         Action::SetAccount(account_idx) => {
@@ -136,11 +146,13 @@ impl State {
                             self.client.switch_account(account).await;
                             let buckets = self.client.list_buckets().await;
                             self.app_state.sources.available_sources = if let Ok(buckets) = buckets {buckets} else {vec![]};
+                            self.app_state.notifications.push(format!("Account {account} has been selected"), false);
                             self.tx.send(self.app_state.clone())?;
                         },
                         Action::ChangeRegion(new_region) => {
                             self.client.change_region(new_region.clone()).await;
                             self.app_state.accounts.region = new_region.clone();
+                            self.app_state.notifications.push(format!("Region changed to {new_region}"), false);
                             self.tx.send(self.app_state.clone())?;
                         }
                         Action::RefreshCredentials => {
@@ -155,6 +167,7 @@ impl State {
                                 .collect();
                             available_accounts.sort();
                             self.app_state.accounts.available_accounts = available_accounts;
+                            self.app_state.notifications.push("Credentials refreshed".to_string(), false);
 
                             self.tx.send(self.app_state.clone())?;
 
@@ -172,7 +185,7 @@ impl State {
                                 .collect();
                             available_accounts.sort();
                             self.app_state.accounts.available_accounts = available_accounts;
-
+                            self.app_state.notifications.push("Credentials updated".to_string(), false);
                             self.tx.send(self.app_state.clone())?;
 
                         }
@@ -181,12 +194,14 @@ impl State {
                             if let Some(bucket) = selected_bucket {
 
                                 if let Err(e) = self.client.download_file(bucket, &key, &file_name).await {
-
-                                let _ = LOGGER.info(&format!("error downloading file {key}"));
-                                let _ = LOGGER.info(&format!("{:?}", e));
-
+                                    let _ = LOGGER.info(&format!("error downloading file {key}"));
+                                    let _ = LOGGER.info(&format!("{:?}", e));
+                                    self.app_state.notifications.push(format!("Failed to download file {key}"), true);
+                                } else {
+                                    self.app_state.notifications.push(format!("File {key} downloaded to current location with name {file_name}"), false);
                                 }
                             }
+                            self.tx.send(self.app_state.clone())?;
 
                         }
 

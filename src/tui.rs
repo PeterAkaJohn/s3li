@@ -3,6 +3,7 @@ mod component;
 mod dashboard;
 mod explorer;
 mod list;
+pub mod notifications;
 mod popup;
 mod region;
 mod sources;

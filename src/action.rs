@@ -1,6 +1,6 @@
 use crate::{providers::AuthProperties, store::explorer::TreeItem};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Action {
     Quit,
     Tick,
