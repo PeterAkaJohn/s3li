@@ -1,6 +1,6 @@
 use ratatui::{
     layout::{Constraint, Direction, Layout},
-    widgets::Paragraph,
+    widgets::{Clear, Paragraph},
 };
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -63,6 +63,7 @@ impl Component for Region {
 
         let container = self.with_container("Region", &props);
         let input_value = Paragraph::new(self.new_region.clone()).block(container);
+        f.render_widget(Clear, center_section);
         f.render_widget(input_value, center_section);
     }
     fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Style, Stylize},
-    widgets::{Block, BorderType, Borders, Paragraph, Wrap},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
 };
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -84,6 +84,7 @@ impl Component for EditAccount {
                 .constraints([Constraint::Percentage(15), Constraint::Percentage(85)])
                 .split(f.size());
             let container = self.with_container(title, &Some(ComponentProps { selected: true }));
+            f.render_widget(Clear, layout[1]);
             f.render_widget(container, layout[1]);
 
             let inner_layout = Layout::default()
@@ -115,6 +116,7 @@ impl Component for EditAccount {
                                     .borders(Borders::ALL)
                                     .border_type(BorderType::Rounded),
                             );
+                        f.render_widget(Clear, input_sections[0]);
                         f.render_widget(input_value, input_sections[0]);
                     }
                 });

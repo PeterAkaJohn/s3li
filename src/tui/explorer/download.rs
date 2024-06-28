@@ -1,6 +1,6 @@
 use ratatui::{
     layout::{Constraint, Direction, Layout},
-    widgets::Paragraph,
+    widgets::{Clear, Paragraph},
 };
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -77,6 +77,7 @@ impl Component for Download {
 
             let container = self.with_container("Download file", &props);
             let input_value = Paragraph::new(file_name.to_string()).block(container);
+            f.render_widget(Clear, center_section);
             f.render_widget(input_value, center_section);
         }
     }
