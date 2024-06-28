@@ -98,17 +98,15 @@ impl Component for Download {
             }
             crossterm::event::KeyCode::Backspace => {
                 // send region to state with ui_tx
-                match self.file_name.as_mut() {
-                    Some(file_name) => {
-                        file_name.pop();
-                    }
-                    None => {}
+                if let Some(file_name) = self.file_name.as_mut() {
+                    file_name.pop();
                 };
             }
-            crossterm::event::KeyCode::Char(value) => match self.file_name.as_mut() {
-                Some(file_name) => file_name.push(value),
-                None => {}
-            },
+            crossterm::event::KeyCode::Char(value) => {
+                if let Some(file_name) = self.file_name.as_mut() {
+                    file_name.push(value)
+                }
+            }
             _ => {}
         }
     }
