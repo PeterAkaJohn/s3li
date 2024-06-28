@@ -1,6 +1,7 @@
 use ratatui::{
+    layout::Alignment,
     style::{Color, Style},
-    widgets::Paragraph,
+    widgets::{Block, Padding, Paragraph},
 };
 
 use crate::store::notifications::Notifications;
@@ -30,11 +31,11 @@ impl Component for NotificationsUI {
             } else {
                 Style::default().fg(Color::LightGreen)
             };
-            let notification_text = Paragraph::new(notification.message.clone()).style(style);
+            let notification_text = Paragraph::new(notification.message.clone())
+                .block(Block::default().padding(Padding::horizontal(1)))
+                .style(style);
             f.render_widget(notification_text, area);
         }
     }
-    fn handle_key_events(&mut self, _key: crossterm::event::KeyEvent) {
-        return;
-    }
+    fn handle_key_events(&mut self, _key: crossterm::event::KeyEvent) {}
 }

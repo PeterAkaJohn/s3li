@@ -132,7 +132,7 @@ impl Component for Dashboard {
     fn render(&mut self, f: &mut ratatui::prelude::Frame, _area: Rect, _: Option<ComponentProps>) {
         let [content, notification_section] = *Layout::default()
             .direction(Direction::Vertical)
-            .constraints([Constraint::Fill(1), Constraint::Length(2)])
+            .constraints([Constraint::Fill(1), Constraint::Length(1)])
             .split(f.size())
         else {
             panic!("layout needs to have 2 chunks")
