@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
-    style::{Color, Style, Stylize},
+    style::{Style, Stylize},
     widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
 };
 use tokio::sync::mpsc::UnboundedSender;
@@ -18,8 +18,9 @@ use crate::{
 pub struct EditAccount {
     open: bool,
     properties: HashMap<String, Option<String>>,
-    new_properties: HashMap<String, Option<String>>,
+    new_properties: Vec<(String, Option<String>)>,
     account_to_edit: Option<String>,
+    selected_idx: usize,
     ui_tx: UnboundedSender<Action>,
 }
 
@@ -29,8 +30,9 @@ impl EditAccount {
             open: false,
             account_to_edit: None,
             properties: HashMap::new(),
-            new_properties: HashMap::new(),
+            new_properties: vec![],
             ui_tx,
+            selected_idx: 0,
         }
     }
 
@@ -41,7 +43,12 @@ impl EditAccount {
     ) {
         self.account_to_edit = Some(account);
         self.properties = properties.clone();
-        self.new_properties = properties.clone();
+        self.new_properties = properties
+            .clone()
+            .iter()
+            .map(|(key, value)| (key.to_string(), value.to_owned()))
+            .collect::<Vec<(String, Option<String>)>>();
+        self.selected_idx = 0;
     }
 }
 
@@ -63,6 +70,13 @@ impl Component for EditAccount {
             crossterm::event::KeyCode::Esc => {
                 self.close_popup();
             }
+            crossterm::event::KeyCode::Tab => {
+                if self.selected_idx == self.new_properties.len() - 1 {
+                    self.selected_idx = 0;
+                } else {
+                    self.selected_idx += 1;
+                }
+            }
             _ => {}
         }
     }
@@ -71,7 +85,7 @@ impl Component for EditAccount {
         &mut self,
         f: &mut ratatui::prelude::Frame,
         _area: ratatui::prelude::Rect,
-        props: Option<ComponentProps>,
+        _props: Option<ComponentProps>,
     ) {
         let name = &self.account_to_edit;
         if name.is_none() {
@@ -83,26 +97,44 @@ impl Component for EditAccount {
                 .direction(Direction::Horizontal)
                 .constraints([Constraint::Percentage(15), Constraint::Percentage(85)])
                 .split(f.size());
+            let section = Layout::default()
+                .direction(Direction::Vertical)
+                .margin(1)
+                .constraints([Constraint::Fill(1), Constraint::Length(3)])
+                .split(layout[1]);
             let container = self.with_container(title, &Some(ComponentProps { selected: true }));
-            f.render_widget(Clear, layout[1]);
-            f.render_widget(container, layout[1]);
+            f.render_widget(Clear, section[0]);
+            f.render_widget(container, section[0]);
 
             let inner_layout = Layout::default()
                 .margin(2)
                 .direction(Direction::Vertical)
                 .constraints(
                     self.new_properties
-                        .keys()
-                        .map(|_| Constraint::Max(3))
+                        .iter()
+                        .enumerate()
+                        .map(|(idx, _)| {
+                            if self.selected_idx == idx {
+                                Constraint::Fill(1)
+                            } else {
+                                Constraint::Max(3)
+                            }
+                        })
                         .collect::<Vec<Constraint>>(),
                 )
-                .split(layout[1]);
+                .split(section[0]);
 
             self.new_properties
                 .iter()
                 .zip(inner_layout.iter())
-                .for_each(|((key, value), property_area)| {
+                .enumerate()
+                .for_each(|(idx, ((key, value), property_area))| {
                     if let Some(value) = value {
+                        let input_section_style = if idx == self.selected_idx {
+                            Style::default().green()
+                        } else {
+                            Style::default()
+                        };
                         let input_sections = Layout::default()
                             .direction(Direction::Horizontal)
                             .constraints([Constraint::Fill(1)])
@@ -114,6 +146,7 @@ impl Component for EditAccount {
                                     .title(key.to_string())
                                     .title_alignment(Alignment::Center)
                                     .borders(Borders::ALL)
+                                    .border_style(input_section_style)
                                     .border_type(BorderType::Rounded),
                             );
                         f.render_widget(Clear, input_sections[0]);
