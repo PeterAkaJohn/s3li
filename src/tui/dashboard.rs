@@ -130,17 +130,10 @@ impl Dashboard {
 
 impl Component for Dashboard {
     fn render(&mut self, f: &mut ratatui::prelude::Frame, _area: Rect, _: Option<ComponentProps>) {
-        let [content, notification_section] = *Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Fill(1), Constraint::Length(1)])
-            .split(f.size())
-        else {
-            panic!("layout needs to have 2 chunks")
-        };
         let [aside, main] = *Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(15), Constraint::Percentage(85)])
-            .split(content)
+            .split(f.size())
         else {
             panic!("layout needs to have 2 chunks")
         };
@@ -150,6 +143,13 @@ impl Component for Dashboard {
             .split(aside)
         else {
             panic!("aside should have 2 nested chunks")
+        };
+        let [content, notification_section] = *Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Fill(1), Constraint::Length(3)])
+            .split(main)
+        else {
+            panic!("layout needs to have 2 chunks")
         };
         self.sources.render(
             f,
@@ -179,7 +179,7 @@ impl Component for Dashboard {
         );
         self.explorer.render(
             f,
-            main,
+            content,
             Some(ComponentProps {
                 selected: matches!(self.selected_component, DashboardComponents::Explorer),
             }),

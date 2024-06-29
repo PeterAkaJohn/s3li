@@ -1,12 +1,11 @@
 use ratatui::{
-    layout::Alignment,
     style::{Color, Style},
-    widgets::{Block, Padding, Paragraph},
+    widgets::{Block, BorderType, Borders, Paragraph},
 };
 
 use crate::store::notifications::Notifications;
 
-use super::component::{Component, ComponentProps};
+use super::component::{Component, ComponentProps, WithContainer};
 
 pub struct NotificationsUI {
     notifications: Notifications,
@@ -18,6 +17,8 @@ impl NotificationsUI {
     }
 }
 
+impl WithContainer<'_> for NotificationsUI {}
+
 impl Component for NotificationsUI {
     fn render(
         &mut self,
@@ -25,17 +26,21 @@ impl Component for NotificationsUI {
         area: ratatui::prelude::Rect,
         _props: Option<ComponentProps>,
     ) {
+        let container = Block::default()
+            .borders(Borders::ALL)
+            .title("Notifications")
+            .border_type(BorderType::Rounded);
         if let Some(notification) = self.notifications.get_last() {
+            let inner_container = container.inner(area);
             let style = if notification.error {
                 Style::default().fg(Color::Red)
             } else {
                 Style::default().fg(Color::LightGreen)
             };
-            let notification_text = Paragraph::new(notification.message.clone())
-                .block(Block::default().padding(Padding::horizontal(1)))
-                .style(style);
-            f.render_widget(notification_text, area);
+            let notification_text = Paragraph::new(notification.message.clone()).style(style);
+            f.render_widget(notification_text, inner_container);
         }
+        f.render_widget(container, area);
     }
     fn handle_key_events(&mut self, _key: crossterm::event::KeyEvent) {}
 }
