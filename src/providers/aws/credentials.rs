@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
-use configparser::ini::Ini;
+use configparser::ini::{Ini, WriteOptions};
 use dirs::home_dir;
+
+use crate::logger::LOGGER;
 
 pub struct Credentials {
     file: String,
@@ -81,7 +83,13 @@ impl Credentials {
             }
         });
 
-        config.write(&self.file)?;
+        let mut write_options = WriteOptions::default();
+        write_options.space_around_delimiters = true;
+        write_options.multiline_line_indentation = 2;
+        write_options.blank_lines_between_sections = 1;
+        // workaround default section was not written and therefore breaking
+        config.set_default_section("somethingthatdoesnotexist");
+        config.pretty_write(&self.file, &write_options)?;
         Ok(true)
     }
 
