@@ -12,5 +12,5 @@ pub enum Action {
     DownloadFile(String, String),
     ChangeRegion(String),
     RefreshCredentials,
-    EditCredentials(usize, AuthProperties),
+    EditCredentials(String, AuthProperties),
 }

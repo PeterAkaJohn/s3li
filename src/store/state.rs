@@ -173,10 +173,9 @@ impl State {
 
                         }
 
-                        Action::EditCredentials(account_idx, properties) => {
-                            let account = self.app_state.accounts.available_accounts.get(account_idx).map(|val| val.as_str()).unwrap();
+                        Action::EditCredentials(account, properties) => {
 
-                            let account_map = self.client.update_account(account, properties);
+                            let account_map = self.client.update_account(&account, properties);
                             self.app_state.accounts.account_map = account_map.clone();
                             let mut available_accounts: Vec<String> = account_map
                                 .clone()

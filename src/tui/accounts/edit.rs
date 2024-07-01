@@ -77,6 +77,33 @@ impl Component for EditAccount {
                     self.selected_idx += 1;
                 }
             }
+            crossterm::event::KeyCode::Backspace => {
+                if let Some(item) = self.new_properties.get_mut(self.selected_idx) {
+                    if let Some(act_val) = item.1.as_mut() {
+                        act_val.pop();
+                    }
+                }
+            }
+            crossterm::event::KeyCode::Char(character) => {
+                if let Some(item) = self.new_properties.get_mut(self.selected_idx) {
+                    if let Some(value) = item.1.as_mut() {
+                        value.push(character)
+                    }
+                }
+            }
+            crossterm::event::KeyCode::Enter => {
+                if !self.new_properties.is_empty() {
+                    let new_properties_hash_map = self
+                        .new_properties
+                        .iter()
+                        .map(|(key, value)| (key.to_owned(), value.to_owned()))
+                        .collect::<HashMap<String, Option<String>>>();
+                    let _ = self.ui_tx.send(Action::EditCredentials(
+                        self.account_to_edit.clone().unwrap(),
+                        new_properties_hash_map,
+                    ));
+                }
+            }
             _ => {}
         }
     }
