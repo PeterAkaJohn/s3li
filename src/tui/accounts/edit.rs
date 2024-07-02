@@ -1,14 +1,16 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Div};
 
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
-    style::{Style, Stylize},
+    style::{Modifier, Style, Stylize},
+    text::{Line, Text},
     widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
 };
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
     action::Action,
+    logger::LOGGER,
     tui::{
         component::{Component, ComponentProps, WithContainer},
         popup::WithPopup,
@@ -157,7 +159,8 @@ impl Component for EditAccount {
                 .enumerate()
                 .for_each(|(idx, ((key, value), property_area))| {
                     if let Some(value) = value {
-                        let input_section_style = if idx == self.selected_idx {
+                        let is_selected = idx == self.selected_idx;
+                        let input_container_style = if is_selected {
                             Style::default().green()
                         } else {
                             Style::default()
@@ -166,18 +169,28 @@ impl Component for EditAccount {
                             .direction(Direction::Horizontal)
                             .constraints([Constraint::Fill(1)])
                             .split(*property_area);
-                        let input_value = Paragraph::new(value.to_string())
+                        let input_value = Paragraph::new(Text::from(Line::from(value.to_string())))
                             .wrap(Wrap::default())
                             .block(
                                 Block::new()
                                     .title(key.to_string())
                                     .title_alignment(Alignment::Center)
                                     .borders(Borders::ALL)
-                                    .border_style(input_section_style)
+                                    .border_style(input_container_style)
                                     .border_type(BorderType::Rounded),
                             );
                         f.render_widget(Clear, input_sections[0]);
                         f.render_widget(input_value, input_sections[0]);
+                        if is_selected {
+                            let starting_y = input_sections[0].y;
+                            let width = input_sections[0].width - 2; // need to remove 2 because of borders?
+                            let value_len = value.chars().count();
+                            // add 1 to increase offset when len equals width
+                            let offset = (value_len as u16 + 1).div_ceil(width);
+                            let y = starting_y + offset;
+                            let x = value_len as u16 % (width);
+                            f.set_cursor(input_sections[0].x + 1 + x, y);
+                        }
                     }
                 });
         }
