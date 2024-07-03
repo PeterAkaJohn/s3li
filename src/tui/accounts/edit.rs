@@ -13,6 +13,7 @@ use crate::{
     logger::LOGGER,
     tui::{
         component::{Component, ComponentProps, WithContainer},
+        components::input::Input,
         popup::WithPopup,
     },
 };
@@ -160,37 +161,8 @@ impl Component for EditAccount {
                 .for_each(|(idx, ((key, value), property_area))| {
                     if let Some(value) = value {
                         let is_selected = idx == self.selected_idx;
-                        let input_container_style = if is_selected {
-                            Style::default().green()
-                        } else {
-                            Style::default()
-                        };
-                        let input_sections = Layout::default()
-                            .direction(Direction::Horizontal)
-                            .constraints([Constraint::Fill(1)])
-                            .split(*property_area);
-                        let input_value = Paragraph::new(Text::from(Line::from(value.to_string())))
-                            .wrap(Wrap::default())
-                            .block(
-                                Block::new()
-                                    .title(key.to_string())
-                                    .title_alignment(Alignment::Center)
-                                    .borders(Borders::ALL)
-                                    .border_style(input_container_style)
-                                    .border_type(BorderType::Rounded),
-                            );
-                        f.render_widget(Clear, input_sections[0]);
-                        f.render_widget(input_value, input_sections[0]);
-                        if is_selected {
-                            let starting_y = input_sections[0].y;
-                            let width = input_sections[0].width - 2; // need to remove 2 because of borders?
-                            let value_len = value.chars().count();
-                            // add 1 to increase offset when len equals width
-                            let offset = (value_len as u16 + 1).div_ceil(width);
-                            let y = starting_y + offset;
-                            let x = value_len as u16 % (width);
-                            f.set_cursor(input_sections[0].x + 1 + x, y);
-                        }
+                        let input = Input::new(value.to_string(), key.to_string(), is_selected);
+                        f.render_widget(input, *property_area);
                     }
                 });
         }

@@ -1,5 +1,6 @@
 mod accounts;
 mod component;
+pub mod components;
 mod dashboard;
 mod explorer;
 mod list;
