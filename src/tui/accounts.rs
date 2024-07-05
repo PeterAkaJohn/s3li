@@ -36,6 +36,9 @@ impl Accounts {
             ui_tx: ui_tx.clone(),
         }
     }
+    pub fn is_locked(&self) -> bool {
+        self.edit_popup.is_popup_open()
+    }
 }
 
 impl Component for Accounts {

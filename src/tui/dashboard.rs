@@ -227,8 +227,12 @@ impl Component for Dashboard {
                 crossterm::event::KeyCode::Left
                 | crossterm::event::KeyCode::Right
                 | crossterm::event::KeyCode::Char('h')
-                | crossterm::event::KeyCode::Char('l') => self.change_selected_component(),
-                crossterm::event::KeyCode::Char('r') => {
+                | crossterm::event::KeyCode::Char('l')
+                    if !self.accounts.is_locked() =>
+                {
+                    self.change_selected_component()
+                }
+                crossterm::event::KeyCode::Char('r') if !self.accounts.is_locked() => {
                     self.set_region_selected();
                     self.region.handle_key_events(key);
                 }
