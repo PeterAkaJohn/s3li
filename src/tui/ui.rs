@@ -5,7 +5,10 @@ use std::{
 
 use anyhow::{Context, Result};
 use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture, Event, EventStream},
+    event::{
+        DisableMouseCapture, EnableMouseCapture, Event, EventStream, KeyCode, KeyEvent,
+        KeyModifiers,
+    },
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -49,7 +52,11 @@ impl Ui {
                 maybe_events = term_events.next() => {
                     match maybe_events {
                         Some(Ok(Event::Key(event))) => {
-                            if event.code == crossterm::event::KeyCode::Char('q') {
+                            if let KeyEvent{
+                                    code: KeyCode::Char('q'),
+                                    modifiers: KeyModifiers::CONTROL | KeyModifiers::SHIFT,
+                                    ..
+                                } = event {
                                 self.tx.send(Action::Quit)?;
                                 break Ok(());
                             }
