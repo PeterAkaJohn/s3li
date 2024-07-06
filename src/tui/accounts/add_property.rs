@@ -1,3 +1,4 @@
+use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
@@ -23,17 +24,15 @@ enum Selected {
 pub struct AddProperty {
     name: String,
     value: String,
-    ui_tx: mpsc::UnboundedSender<Action>,
     open: bool,
     selected: Selected,
 }
 
 impl AddProperty {
-    pub fn new(ui_tx: mpsc::UnboundedSender<Action>) -> Self {
+    pub fn new() -> Self {
         Self {
             name: Default::default(),
             value: Default::default(),
-            ui_tx,
             open: false,
             selected: Selected::Name,
         }
@@ -44,6 +43,13 @@ impl AddProperty {
             Selected::Name => Selected::Value,
             Selected::Value => Selected::Name,
         };
+    }
+
+    pub fn get_property_to_add(&mut self) -> (String, Option<String>) {
+        let new_property = (self.name.clone(), Some(self.value.clone()));
+        self.name = Default::default();
+        self.value = Default::default();
+        new_property
     }
 }
 

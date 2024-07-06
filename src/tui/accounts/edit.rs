@@ -1,5 +1,6 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Not};
 
+use anyhow::{Ok, Result};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
@@ -38,8 +39,13 @@ impl EditAccount {
             new_properties: vec![],
             ui_tx: ui_tx.clone(),
             selected_idx: 0,
-            add_property: AddProperty::new(ui_tx.clone()),
+            add_property: AddProperty::new(),
         }
+    }
+
+    fn add_to_properties(&mut self, property: (String, Option<String>)) -> Result<bool> {
+        self.new_properties.push(property);
+        Ok(true)
     }
 
     pub fn update_properties(
@@ -72,7 +78,7 @@ impl WithPopup for EditAccount {
 
 impl Component for EditAccount {
     fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
-        if self.add_property.is_popup_open() {
+        if self.add_property.is_popup_open() && matches!(key.code, KeyCode::Enter).not() {
             self.add_property.handle_key_events(key);
             return;
         }
@@ -82,7 +88,9 @@ impl Component for EditAccount {
             ..
         } = key
         {
-            self.add_property.open_popup();
+            if !self.add_property.is_popup_open() {
+                self.add_property.open_popup();
+            }
             return;
         };
         match key.code {
@@ -111,7 +119,11 @@ impl Component for EditAccount {
                 }
             }
             crossterm::event::KeyCode::Enter => {
-                if !self.new_properties.is_empty() {
+                if self.add_property.is_popup_open() {
+                    let new_property = self.add_property.get_property_to_add();
+                    self.add_to_properties(new_property);
+                    self.add_property.close_popup();
+                } else if !self.new_properties.is_empty() {
                     let new_properties_hash_map = self
                         .new_properties
                         .iter()
