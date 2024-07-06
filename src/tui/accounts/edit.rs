@@ -1,10 +1,9 @@
-use std::{collections::HashMap, ops::Div};
+use std::collections::HashMap;
 
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
-    layout::{Alignment, Constraint, Direction, Layout},
-    style::{Modifier, Style, Stylize},
-    text::{Line, Text},
-    widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
+    layout::{Constraint, Direction, Layout},
+    widgets::Clear,
 };
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -18,6 +17,8 @@ use crate::{
     },
 };
 
+use super::add_property::AddProperty;
+
 pub struct EditAccount {
     open: bool,
     properties: HashMap<String, Option<String>>,
@@ -25,6 +26,7 @@ pub struct EditAccount {
     account_to_edit: Option<String>,
     selected_idx: usize,
     ui_tx: UnboundedSender<Action>,
+    add_property: AddProperty,
 }
 
 impl EditAccount {
@@ -34,8 +36,9 @@ impl EditAccount {
             account_to_edit: None,
             properties: HashMap::new(),
             new_properties: vec![],
-            ui_tx,
+            ui_tx: ui_tx.clone(),
             selected_idx: 0,
+            add_property: AddProperty::new(ui_tx.clone()),
         }
     }
 
@@ -69,6 +72,19 @@ impl WithPopup for EditAccount {
 
 impl Component for EditAccount {
     fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
+        if self.add_property.is_popup_open() {
+            self.add_property.handle_key_events(key);
+            return;
+        }
+        if let KeyEvent {
+            code: KeyCode::Char('a'),
+            modifiers: KeyModifiers::CONTROL | KeyModifiers::SHIFT,
+            ..
+        } = key
+        {
+            self.add_property.open_popup();
+            return;
+        };
         match key.code {
             crossterm::event::KeyCode::Esc => {
                 self.close_popup();
@@ -107,7 +123,9 @@ impl Component for EditAccount {
                     ));
                 }
             }
-            _ => {}
+            _ => {
+                LOGGER.info(&format!("{:#?}", key.code));
+            }
         }
     }
 
@@ -165,6 +183,9 @@ impl Component for EditAccount {
                         f.render_widget(input, *property_area);
                     }
                 });
+            if self.add_property.is_popup_open() {
+                self.add_property.render(f, _area, _props);
+            }
         }
     }
 }

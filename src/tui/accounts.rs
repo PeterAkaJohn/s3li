@@ -1,3 +1,4 @@
+mod add_property;
 mod edit;
 
 use edit::EditAccount;
