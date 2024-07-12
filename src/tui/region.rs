@@ -8,6 +8,7 @@ use crate::action::Action;
 
 use super::{
     component::{Component, ComponentProps, WithContainer},
+    components::input::Input,
     popup::WithPopup,
 };
 
@@ -46,7 +47,7 @@ impl Component for Region {
         &mut self,
         f: &mut ratatui::prelude::Frame,
         _area: ratatui::prelude::Rect,
-        props: Option<ComponentProps>,
+        _: Option<ComponentProps>,
     ) {
         let layout = Layout::default()
             .direction(Direction::Vertical)
@@ -61,15 +62,11 @@ impl Component for Region {
             ])
             .split(layout[1])[1];
 
-        let container = self.with_container("Region", &props);
-        let input_value = Paragraph::new(self.new_region.clone()).block(container);
+        let input = Input::new(self.new_region.to_string(), "Region".to_string(), true);
         f.render_widget(Clear, center_section);
-        f.render_widget(input_value, center_section);
+        f.render_widget(input, center_section);
     }
     fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
-        if !self.is_popup_open() && key.code == crossterm::event::KeyCode::Char('r') {
-            return self.open_popup();
-        }
         match key.code {
             crossterm::event::KeyCode::Esc => {
                 self.open = false;

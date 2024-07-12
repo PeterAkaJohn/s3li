@@ -11,8 +11,6 @@ use super::{
     component::{Component, ComponentProps},
     explorer::Explorer,
     notifications::NotificationsUI,
-    popup::WithPopup,
-    region::Region,
     sources::Sources,
 };
 
@@ -22,7 +20,6 @@ pub struct Dashboard {
     sources: Sources,
     accounts: Accounts,
     explorer: Explorer,
-    region: Region,
     notifications: NotificationsUI,
     ui_tx: UnboundedSender<Action>,
     aside_constraints: [Constraint; 2],
@@ -33,7 +30,6 @@ enum DashboardComponents {
     Sources,
     Accounts,
     Explorer,
-    Region,
 }
 
 impl Dashboard {
@@ -45,10 +41,10 @@ impl Dashboard {
         let accounts = Accounts::new(
             &state.accounts.available_accounts,
             state.accounts.account_map.clone(),
+            state.accounts.region.clone(),
             &None,
             ui_tx.clone(),
         );
-        let region = Region::new(state.accounts.region.clone(), ui_tx.clone());
 
         let explorer = Explorer::new(None, None, ui_tx.clone());
         let notifications = NotificationsUI::new(state.notifications.clone());
@@ -58,7 +54,6 @@ impl Dashboard {
             sources,
             accounts,
             explorer,
-            region,
             notifications,
             ui_tx,
             aside_constraints: [Constraint::Length(3), Constraint::Fill(1)],
@@ -73,6 +68,7 @@ impl Dashboard {
         let accounts = Accounts::new(
             &state.accounts.available_accounts,
             state.accounts.account_map.clone(),
+            state.accounts.region.clone(),
             &state.accounts.active_account,
             self.ui_tx.clone(),
         );
@@ -82,7 +78,6 @@ impl Dashboard {
             self.ui_tx.clone(),
         );
 
-        let region = Region::new(state.accounts.region.clone(), self.ui_tx.clone());
         let notifications = NotificationsUI::new(state.notifications.clone());
 
         Dashboard {
@@ -91,7 +86,6 @@ impl Dashboard {
             sources,
             accounts,
             explorer,
-            region,
             notifications,
             ui_tx: self.ui_tx,
             aside_constraints: self.aside_constraints,
@@ -118,13 +112,6 @@ impl Dashboard {
     }
     fn set_sources_selected(&mut self) {
         self.selected_component = DashboardComponents::Sources;
-    }
-    fn set_region_selected(&mut self) {
-        self.previous_selected_component = self.selected_component.clone();
-        self.selected_component = DashboardComponents::Region;
-    }
-    fn set_previous_selected_component(&mut self) {
-        self.selected_component = self.previous_selected_component.clone();
     }
 }
 
@@ -158,23 +145,14 @@ impl Component for Dashboard {
                 selected: matches!(
                     self.selected_component,
                     DashboardComponents::Sources | DashboardComponents::Explorer
-                ) | (self.region.is_popup_open()
-                    && matches!(
-                        self.previous_selected_component,
-                        DashboardComponents::Sources
-                    )),
+                ),
             }),
         );
         self.accounts.render(
             f,
             accounts,
             Some(ComponentProps {
-                selected: matches!(self.selected_component, DashboardComponents::Accounts)
-                    | (self.region.is_popup_open()
-                        && matches!(
-                            self.previous_selected_component,
-                            DashboardComponents::Accounts
-                        )),
+                selected: matches!(self.selected_component, DashboardComponents::Accounts),
             }),
         );
         self.explorer.render(
@@ -186,16 +164,6 @@ impl Component for Dashboard {
         );
 
         self.notifications.render(f, notification_section, None);
-
-        if self.region.is_popup_open() {
-            self.region.render(
-                f,
-                main,
-                Some(ComponentProps {
-                    selected: matches!(self.selected_component, DashboardComponents::Region),
-                }),
-            )
-        }
     }
 
     fn handle_key_events(&mut self, key: KeyEvent) {
@@ -206,10 +174,6 @@ impl Component for Dashboard {
                 | crossterm::event::KeyCode::Right
                 | crossterm::event::KeyCode::Char('h')
                 | crossterm::event::KeyCode::Char('l') => self.change_selected_component(),
-                crossterm::event::KeyCode::Char('r') => {
-                    self.set_region_selected();
-                    self.region.handle_key_events(key);
-                }
                 crossterm::event::KeyCode::Enter => {
                     self.sources.handle_key_events(key);
                     self.set_explorer_selected();
@@ -232,22 +196,7 @@ impl Component for Dashboard {
                 {
                     self.change_selected_component()
                 }
-                crossterm::event::KeyCode::Char('r') if !self.accounts.is_locked() => {
-                    self.set_region_selected();
-                    self.region.handle_key_events(key);
-                }
                 _ => self.accounts.handle_key_events(key),
-            },
-            DashboardComponents::Region => match keycode {
-                crossterm::event::KeyCode::Esc => {
-                    self.region.handle_key_events(key);
-                    self.set_previous_selected_component();
-                }
-                crossterm::event::KeyCode::Enter => {
-                    self.region.handle_key_events(key);
-                    self.selected_component = self.previous_selected_component.clone();
-                }
-                _ => self.region.handle_key_events(key),
             },
         };
     }
