@@ -1,7 +1,9 @@
 mod add_property;
 mod edit;
+mod region;
 
 use edit::EditAccount;
+use region::Region;
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{action::Action, logger::LOGGER, providers::AccountMap};
@@ -10,7 +12,6 @@ use super::{
     component::{Component, ComponentProps},
     list::ListComponent,
     popup::WithPopup,
-    region::Region,
 };
 
 pub struct Accounts {

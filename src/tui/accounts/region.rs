@@ -1,15 +1,16 @@
 use ratatui::{
     layout::{Constraint, Direction, Layout},
-    widgets::{Clear, Paragraph},
+    widgets::Clear,
 };
 use tokio::sync::mpsc::UnboundedSender;
 
-use crate::action::Action;
-
-use super::{
-    component::{Component, ComponentProps, WithContainer},
-    components::input::Input,
-    popup::WithPopup,
+use crate::{
+    action::Action,
+    tui::{
+        component::{Component, ComponentProps, WithContainer},
+        components::input::Input,
+        popup::WithPopup,
+    },
 };
 
 pub struct Region {
