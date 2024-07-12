@@ -10,7 +10,7 @@ use crate::{action::Action, logger::LOGGER, providers::AccountMap};
 
 use super::{
     component::{Component, ComponentProps},
-    list::ListComponent,
+    list::{ListComponent, WithList},
     popup::WithPopup,
 };
 
@@ -73,12 +73,16 @@ impl Component for Accounts {
         self.component.handle_key_events(key);
         match key.code {
             crossterm::event::KeyCode::Char('e') => {
-                let account_value = self.component.get_selected_item_value();
-                let account_properties = self.account_map.get(account_value);
-                if let Some(account_values) = account_properties {
-                    self.edit_popup
-                        .update_properties(account_value.to_string(), account_values.to_owned());
-                    self.edit_popup.open_popup();
+                if self.component.get_list_state_selected().is_some() {
+                    let account_value = self.component.get_selected_item_value();
+                    let account_properties = self.account_map.get(account_value);
+                    if let Some(account_values) = account_properties {
+                        self.edit_popup.update_properties(
+                            account_value.to_string(),
+                            account_values.to_owned(),
+                        );
+                        self.edit_popup.open_popup();
+                    }
                 }
             }
             crossterm::event::KeyCode::Char('r') => {
