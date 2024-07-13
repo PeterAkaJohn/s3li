@@ -2,6 +2,7 @@ mod add_property;
 mod edit;
 mod region;
 
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use edit::EditAccount;
 use region::Region;
 use tokio::sync::mpsc::UnboundedSender;
@@ -65,38 +66,49 @@ impl Component for Accounts {
     }
     fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
         if self.edit_popup.is_popup_open() {
-            self.edit_popup.handle_key_events(key)
+            self.edit_popup.handle_key_events(key);
+            return;
         }
         if self.region_popup.is_popup_open() {
-            self.region_popup.handle_key_events(key)
+            self.region_popup.handle_key_events(key);
+            return;
         }
         self.component.handle_key_events(key);
-        match key.code {
-            crossterm::event::KeyCode::Char('e') => {
-                if self.component.get_list_state_selected().is_some() {
-                    let account_value = self.component.get_selected_item_value();
-                    let account_properties = self.account_map.get(account_value);
-                    if let Some(account_values) = account_properties {
-                        self.edit_popup.update_properties(
-                            account_value.to_string(),
-                            account_values.to_owned(),
-                        );
-                        self.edit_popup.open_popup();
+        match key {
+            KeyEvent {
+                code: KeyCode::Char('r'),
+                modifiers: KeyModifiers::CONTROL,
+                ..
+            } => {
+                let _ = self.ui_tx.send(Action::RefreshCredentials);
+            }
+            keyevent => match keyevent.code {
+                crossterm::event::KeyCode::Char('e') => {
+                    if self.component.get_list_state_selected().is_some() {
+                        let account_value = self.component.get_selected_item_value();
+                        let account_properties = self.account_map.get(account_value);
+                        if let Some(account_values) = account_properties {
+                            self.edit_popup.update_properties(
+                                account_value.to_string(),
+                                account_values.to_owned(),
+                            );
+                            self.edit_popup.open_popup();
+                        }
                     }
                 }
-            }
-            crossterm::event::KeyCode::Char('r') => {
-                self.region_popup.open_popup();
-            }
-            crossterm::event::KeyCode::Enter => {
-                if let Some(idx) = self.component.get_active_idx() {
-                    let _ = match self.ui_tx.send(Action::SetAccount(idx)) {
-                        Ok(_) => LOGGER.info(&format!("send set account with idx {idx}")),
-                        Err(_) => LOGGER.info(&format!("failed to set account with idx {idx}")),
-                    };
+                crossterm::event::KeyCode::Char('r') => {
+                    self.region_popup.open_popup();
                 }
-            }
-            _ => {}
+                crossterm::event::KeyCode::Enter => {
+                    if let Some(idx) = self.component.get_active_idx() {
+                        let _ = match self.ui_tx.send(Action::SetAccount(idx)) {
+                            Ok(_) => LOGGER.info(&format!("send set account with idx {idx}")),
+                            Err(_) => LOGGER.info(&format!("failed to set account with idx {idx}")),
+                        };
+                    }
+                }
+                _ => {}
+            },
         };
     }
 }
