@@ -214,6 +214,19 @@ impl State {
 
                         }
 
+                        Action::CycleSelectedComponent => {
+                            match self.app_state.selected_component {
+                                DashboardComponents::Sources => {
+                                    self.app_state.selected_component = DashboardComponents::Accounts;
+                                },
+                                DashboardComponents::Accounts => {
+                                    self.app_state.selected_component = DashboardComponents::Sources;
+                                },
+                                _ => {}
+                            }
+                            self.tx.send(self.app_state.clone())?;
+                        }
+
                         Action::SetSelectedComponent(selected_component) => {
                             self.app_state.selected_component = selected_component;
                             self.tx.send(self.app_state.clone())?;

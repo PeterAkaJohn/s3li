@@ -92,19 +92,7 @@ impl Dashboard {
         }
     }
     fn change_selected_component(&mut self) {
-        match self.selected_component {
-            DashboardComponents::Sources => {
-                let _ = self
-                    .ui_tx
-                    .send(Action::SetSelectedComponent(DashboardComponents::Accounts));
-            }
-            DashboardComponents::Accounts => {
-                let _ = self
-                    .ui_tx
-                    .send(Action::SetSelectedComponent(DashboardComponents::Sources));
-            }
-            _ => {}
-        }
+        let _ = self.ui_tx.send(Action::CycleSelectedComponent);
     }
 
     fn set_explorer_selected(&mut self) {

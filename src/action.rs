@@ -17,4 +17,5 @@ pub enum Action {
     RefreshCredentials,
     EditCredentials(String, AuthProperties),
     SetSelectedComponent(DashboardComponents),
+    CycleSelectedComponent,
 }
