@@ -16,6 +16,14 @@ use super::{
     sources::Sources,
 };
 
+#[derive(Default, Debug, Clone)]
+pub enum DashboardComponents {
+    Sources,
+    #[default]
+    Accounts,
+    Explorer,
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct AppState {
     pub sources: Sources,
@@ -23,6 +31,7 @@ pub struct AppState {
     pub explorer: Explorer,
     pub action_manager: ActionManager,
     pub notifications: Notifications,
+    pub selected_component: DashboardComponents,
 }
 
 impl LogToFile for AppState {
@@ -64,6 +73,7 @@ impl State {
             },
             action_manager: ActionManager::default(),
             notifications: Notifications::default(),
+            selected_component: DashboardComponents::default(),
         };
         (
             Self {
@@ -202,6 +212,24 @@ impl State {
                             }
                             self.tx.send(self.app_state.clone())?;
 
+                        }
+
+                        Action::CycleSelectedComponent => {
+                            match self.app_state.selected_component {
+                                DashboardComponents::Sources => {
+                                    self.app_state.selected_component = DashboardComponents::Accounts;
+                                },
+                                DashboardComponents::Accounts => {
+                                    self.app_state.selected_component = DashboardComponents::Sources;
+                                },
+                                _ => {}
+                            }
+                            self.tx.send(self.app_state.clone())?;
+                        }
+
+                        Action::SetSelectedComponent(selected_component) => {
+                            self.app_state.selected_component = selected_component;
+                            self.tx.send(self.app_state.clone())?;
                         }
 
                     }

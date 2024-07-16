@@ -4,7 +4,11 @@ use crossterm::event::KeyEvent;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use tokio::sync::mpsc::UnboundedSender;
 
-use crate::{action::Action, logger::LOGGER, store::state::AppState};
+use crate::{
+    action::Action,
+    logger::LOGGER,
+    store::state::{AppState, DashboardComponents},
+};
 
 use super::{
     accounts::Accounts,
@@ -16,20 +20,12 @@ use super::{
 
 pub struct Dashboard {
     selected_component: DashboardComponents,
-    previous_selected_component: DashboardComponents,
     sources: Sources,
     accounts: Accounts,
     explorer: Explorer,
     notifications: NotificationsUI,
     ui_tx: UnboundedSender<Action>,
     aside_constraints: [Constraint; 2],
-}
-
-#[derive(Clone)]
-enum DashboardComponents {
-    Sources,
-    Accounts,
-    Explorer,
 }
 
 impl Dashboard {
@@ -49,8 +45,7 @@ impl Dashboard {
         let explorer = Explorer::new(None, None, ui_tx.clone());
         let notifications = NotificationsUI::new(state.notifications.clone());
         Dashboard {
-            selected_component: DashboardComponents::Accounts,
-            previous_selected_component: DashboardComponents::Accounts,
+            selected_component: state.selected_component.clone(),
             sources,
             accounts,
             explorer,
@@ -79,39 +74,36 @@ impl Dashboard {
         );
 
         let notifications = NotificationsUI::new(state.notifications.clone());
+        let aside_constraints =
+            if matches!(&state.selected_component, &DashboardComponents::Accounts) {
+                [Constraint::Length(3), Constraint::Fill(1)]
+            } else {
+                [Constraint::Fill(1), Constraint::Length(3)]
+            };
 
         Dashboard {
-            selected_component: self.selected_component,
-            previous_selected_component: self.previous_selected_component,
+            selected_component: state.selected_component.clone(),
             sources,
             accounts,
             explorer,
             notifications,
             ui_tx: self.ui_tx,
-            aside_constraints: self.aside_constraints,
+            aside_constraints,
         }
     }
     fn change_selected_component(&mut self) {
-        match self.selected_component {
-            DashboardComponents::Sources => {
-                self.previous_selected_component = DashboardComponents::Sources;
-                self.selected_component = DashboardComponents::Accounts;
-                self.aside_constraints = [Constraint::Length(3), Constraint::Fill(1)]
-            }
-            DashboardComponents::Accounts => {
-                self.previous_selected_component = DashboardComponents::Accounts;
-                self.selected_component = DashboardComponents::Sources;
-                self.aside_constraints = [Constraint::Fill(1), Constraint::Length(3)]
-            }
-            _ => {}
-        }
+        let _ = self.ui_tx.send(Action::CycleSelectedComponent);
     }
 
     fn set_explorer_selected(&mut self) {
-        self.selected_component = DashboardComponents::Explorer;
+        let _ = self
+            .ui_tx
+            .send(Action::SetSelectedComponent(DashboardComponents::Explorer));
     }
     fn set_sources_selected(&mut self) {
-        self.selected_component = DashboardComponents::Sources;
+        let _ = self
+            .ui_tx
+            .send(Action::SetSelectedComponent(DashboardComponents::Sources));
     }
 }
 
