@@ -10,9 +10,11 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::{action::Action, logger::LOGGER, providers::AccountMap};
 
 use super::{
-    components::traits::{Component, ComponentProps},
+    components::{
+        popup::WithPopup,
+        traits::{Component, ComponentProps},
+    },
     list::{ListComponent, WithList},
-    popup::WithPopup,
 };
 
 pub struct Accounts {

@@ -15,9 +15,11 @@ use crate::{
 };
 
 use super::{
-    components::traits::{Component, ComponentProps, WithContainer},
+    components::{
+        popup::WithPopup,
+        traits::{Component, ComponentProps, WithContainer},
+    },
     list::WithList,
-    popup::WithPopup,
 };
 
 #[derive(Debug)]

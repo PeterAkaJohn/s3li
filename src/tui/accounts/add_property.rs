@@ -3,12 +3,10 @@ use ratatui::{
     widgets::Clear,
 };
 
-use crate::tui::{
-    components::{
-        input::Input,
-        traits::{Component, ComponentProps, WithContainer},
-    },
+use crate::tui::components::{
+    input::Input,
     popup::WithPopup,
+    traits::{Component, ComponentProps, WithContainer},
 };
 
 enum Selected {
