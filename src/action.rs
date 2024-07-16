@@ -1,4 +1,7 @@
-use crate::{providers::AuthProperties, store::explorer::TreeItem};
+use crate::{
+    providers::AuthProperties,
+    store::{explorer::TreeItem, state::DashboardComponents},
+};
 
 #[derive(Debug, Clone)]
 pub enum Action {
@@ -13,4 +16,5 @@ pub enum Action {
     ChangeRegion(String),
     RefreshCredentials,
     EditCredentials(String, AuthProperties),
+    SetSelectedComponent(DashboardComponents),
 }
