@@ -7,7 +7,7 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::{
     action::Action,
     tui::{
-        component::{Component, ComponentProps, WithContainer},
+        components::traits::{Component, ComponentProps, WithContainer},
         popup::WithPopup,
     },
 };

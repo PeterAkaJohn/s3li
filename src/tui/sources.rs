@@ -3,7 +3,7 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::action::Action;
 
 use super::{
-    component::{Component, ComponentProps},
+    components::traits::{Component, ComponentProps},
     list::ListComponent,
 };
 

@@ -16,7 +16,7 @@ use futures::StreamExt;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 
-use crate::{action::Action, store::state::AppState, tui::component::Component};
+use crate::{action::Action, store::state::AppState, tui::components::traits::Component};
 
 use super::dashboard::Dashboard;
 

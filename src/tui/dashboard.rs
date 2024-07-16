@@ -6,13 +6,12 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
     action::Action,
-    logger::LOGGER,
     store::state::{AppState, DashboardComponents},
 };
 
 use super::{
     accounts::Accounts,
-    component::{Component, ComponentProps},
+    components::traits::{Component, ComponentProps},
     explorer::Explorer,
     notifications::NotificationsUI,
     sources::Sources,

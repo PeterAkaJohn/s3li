@@ -5,7 +5,7 @@ use ratatui::{
 
 use crate::store::notifications::Notifications;
 
-use super::component::{Component, ComponentProps, WithContainer};
+use super::components::traits::{Component, ComponentProps, WithContainer};
 
 pub struct NotificationsUI {
     notifications: Notifications,

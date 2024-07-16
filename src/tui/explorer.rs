@@ -11,12 +11,11 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
     action::Action,
-    logger::LOGGER,
     store::explorer::{FileTree, Folder, TreeItem},
 };
 
 use super::{
-    component::{Component, ComponentProps, WithContainer},
+    components::traits::{Component, ComponentProps, WithContainer},
     list::WithList,
     popup::WithPopup,
 };

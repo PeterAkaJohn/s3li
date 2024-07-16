@@ -10,7 +10,7 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::{action::Action, logger::LOGGER, providers::AccountMap};
 
 use super::{
-    component::{Component, ComponentProps},
+    components::traits::{Component, ComponentProps},
     list::{ListComponent, WithList},
     popup::WithPopup,
 };

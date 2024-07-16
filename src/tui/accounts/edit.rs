@@ -12,8 +12,10 @@ use crate::{
     action::Action,
     logger::LOGGER,
     tui::{
-        component::{Component, ComponentProps, WithContainer},
-        components::input::Input,
+        components::{
+            input::Input,
+            traits::{Component, ComponentProps, WithContainer},
+        },
         popup::WithPopup,
     },
 };
