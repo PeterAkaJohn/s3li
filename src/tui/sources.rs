@@ -2,9 +2,9 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::action::Action;
 
-use super::{
-    components::traits::{Component, ComponentProps},
+use super::components::{
     list::ListComponent,
+    traits::{Component, ComponentProps},
 };
 
 pub struct Sources {

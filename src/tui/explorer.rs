@@ -14,12 +14,10 @@ use crate::{
     store::explorer::{FileTree, Folder, TreeItem},
 };
 
-use super::{
-    components::{
-        popup::WithPopup,
-        traits::{Component, ComponentProps, WithContainer},
-    },
+use super::components::{
     list::WithList,
+    popup::WithPopup,
+    traits::{Component, ComponentProps, WithContainer},
 };
 
 #[derive(Debug)]

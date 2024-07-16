@@ -6,7 +6,7 @@ use ratatui::{
     widgets::{List, ListItem, ListState, Paragraph},
 };
 
-use super::components::traits::{Component, ComponentProps, WithContainer};
+use super::traits::{Component, ComponentProps, WithContainer};
 
 pub trait WithList {
     fn get_list_items_len(&self) -> usize;
