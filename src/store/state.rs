@@ -13,7 +13,7 @@ use super::{
     action_manager::ActionManager,
     explorer::{Explorer, FileTree},
     notifications::Notifications,
-    sources::Sources,
+    sources::{traits::WithSources, Sources},
 };
 
 #[derive(Default, Debug, Clone)]
@@ -60,10 +60,7 @@ impl State {
             .collect();
         available_accounts.sort();
         let app_state = AppState {
-            sources: Sources {
-                available_sources: vec![],
-                active_source: None,
-            },
+            sources: Sources::default(),
             explorer: Explorer::new(),
             accounts: Accounts {
                 active_account: None,
@@ -118,7 +115,7 @@ impl State {
                             } else {
                                 panic!("cannot be a file tree_item");
                             };
-                            let (files,folders) = self.client.list_objects(&self.app_state.sources.active_source.clone().unwrap(), new_selected_folder.clone().map(|folder| folder.name).as_deref()).await;
+                            let (files,folders) = self.client.list_objects(self.app_state.sources.get_active_source().as_ref().unwrap(), new_selected_folder.clone().map(|folder| folder.name).as_deref()).await;
                             if let Some(folder) = new_selected_folder.clone() {
                                 self.app_state.explorer
                                     .update_folder(folder, files.iter().map(|file_key| file_key.parse().expect("file creation cannot fail")).collect(), folders.iter().map(|new_folder| new_folder.parse().expect("folder creation cannot fail")).collect());
@@ -136,9 +133,8 @@ impl State {
                             self.tx.send(self.app_state.clone())?;
                         },
                         Action::SetSource(source_idx) => {
-                            let bucket = self.app_state.sources.available_sources.get(source_idx).map(|val| val.to_string());
-                            self.app_state.sources.active_source = bucket.clone();
-                            let (files,folders) = self.client.list_objects(&bucket.clone().unwrap(), None).await;
+                            let bucket = self.app_state.sources.set_source_with_idx(source_idx);
+                            let (files,folders) = self.client.list_objects(bucket.as_ref().unwrap(), None).await;
                             let file_tree = FileTree::new(
                                 "/".parse().expect("root_folder initialization cannot fail"),
                                 folders.iter().map(|folder| folder.parse().expect("folder creation cannot fail")).collect(),
@@ -155,7 +151,8 @@ impl State {
                             self.app_state.accounts.active_account = Some(account.to_string());
                             self.client.switch_account(account).await;
                             let buckets = self.client.list_buckets().await;
-                            self.app_state.sources.available_sources = if let Ok(buckets) = buckets {buckets} else {vec![]};
+                            let sources = if let Ok(buckets) = buckets {buckets} else {vec![]};
+                            self.app_state.sources.set_available_sources(sources);
                             self.app_state.notifications.push(format!("Account {account} has been selected"), false);
                             self.tx.send(self.app_state.clone())?;
                         },
@@ -199,7 +196,7 @@ impl State {
 
                         }
                         Action::DownloadFile(key, file_name) => {
-                            let selected_bucket = &self.app_state.sources.active_source;
+                            let selected_bucket = self.app_state.sources.get_active_source();
                             if let Some(bucket) = selected_bucket {
 
                                 if let Err(e) = self.client.download_file(bucket, &key, &file_name).await {

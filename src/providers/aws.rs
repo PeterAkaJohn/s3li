@@ -10,6 +10,7 @@ pub use credentials::{AuthProperties, Credentials};
 
 use crate::logger::LOGGER;
 
+#[derive(Debug, Clone)]
 pub struct AwsClient {
     account: String,
     client: Client,

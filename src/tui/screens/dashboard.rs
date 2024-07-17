@@ -6,7 +6,10 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
     action::Action,
-    store::state::{AppState, DashboardComponents},
+    store::{
+        sources::WithSources,
+        state::{AppState, DashboardComponents},
+    },
     tui::{
         components::traits::{Component, ComponentProps},
         sections::{
@@ -31,7 +34,7 @@ impl Dashboard {
     where
         Self: Sized,
     {
-        let sources = Sources::new(&state.sources.available_sources, &None, ui_tx.clone());
+        let sources = Sources::new(state.sources.get_available_sources(), &None, ui_tx.clone());
         let accounts = Accounts::new(
             &state.accounts.available_accounts,
             state.accounts.account_map.clone(),
@@ -54,8 +57,8 @@ impl Dashboard {
     }
     pub fn refresh_components(self, state: &AppState) -> Self {
         let sources = Sources::new(
-            &state.sources.available_sources,
-            &state.sources.active_source,
+            state.sources.get_available_sources(),
+            state.sources.get_active_source(),
             self.ui_tx.clone(),
         );
         let accounts = Accounts::new(

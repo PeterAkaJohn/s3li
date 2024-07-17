@@ -6,6 +6,7 @@ use dirs::home_dir;
 
 use crate::logger::LOGGER;
 
+#[derive(Debug, Clone)]
 pub struct Credentials {
     file: String,
     accounts: Vec<String>,
