@@ -1,7 +1,4 @@
-mod accounts;
-pub mod components;
-mod dashboard;
-mod explorer;
-pub mod notifications;
-mod sources;
+mod components;
+mod screens;
+mod sections;
 pub mod ui;

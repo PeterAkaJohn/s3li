@@ -3,9 +3,10 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Paragraph},
 };
 
-use crate::store::notifications::Notifications;
-
-use super::components::traits::{Component, ComponentProps, WithContainer};
+use crate::{
+    store::notifications::Notifications,
+    tui::components::traits::{Component, ComponentProps, WithContainer},
+};
 
 pub struct NotificationsUI {
     notifications: Notifications,

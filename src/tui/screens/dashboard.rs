@@ -7,14 +7,13 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::{
     action::Action,
     store::state::{AppState, DashboardComponents},
-};
-
-use super::{
-    accounts::Accounts,
-    components::traits::{Component, ComponentProps},
-    explorer::Explorer,
-    notifications::NotificationsUI,
-    sources::Sources,
+    tui::{
+        components::traits::{Component, ComponentProps},
+        sections::{
+            accounts::Accounts, explorer::Explorer, notifications::NotificationsUI,
+            sources::Sources,
+        },
+    },
 };
 
 pub struct Dashboard {

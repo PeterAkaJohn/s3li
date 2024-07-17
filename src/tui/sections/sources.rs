@@ -1,10 +1,11 @@
 use tokio::sync::mpsc::UnboundedSender;
 
-use crate::action::Action;
-
-use super::components::{
-    list::ListComponent,
-    traits::{Component, ComponentProps},
+use crate::{
+    action::Action,
+    tui::components::{
+        list::ListComponent,
+        traits::{Component, ComponentProps},
+    },
 };
 
 pub struct Sources {

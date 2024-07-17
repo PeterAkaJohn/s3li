@@ -18,7 +18,7 @@ use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 
 use crate::{action::Action, store::state::AppState, tui::components::traits::Component};
 
-use super::dashboard::Dashboard;
+use super::screens::dashboard::Dashboard;
 
 pub struct Ui {
     pub tx: UnboundedSender<Action>,
