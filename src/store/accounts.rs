@@ -7,3 +7,19 @@ pub struct Accounts {
     pub active_account: Option<String>,
     pub region: String,
 }
+
+impl Accounts {
+    pub fn new(
+        account_map: AccountMap,
+        available_accounts: Vec<String>,
+        active_account: Option<String>,
+        region: String,
+    ) -> Self {
+        Self {
+            account_map,
+            available_accounts,
+            active_account,
+            region,
+        }
+    }
+}

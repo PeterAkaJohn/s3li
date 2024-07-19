@@ -62,12 +62,7 @@ impl State {
         let app_state = AppState {
             sources: Sources::default(),
             explorer: Explorer::new(),
-            accounts: Accounts {
-                active_account: None,
-                account_map: account_map.clone(),
-                available_accounts,
-                region: client.region.clone(),
-            },
+            accounts: Accounts::new(account_map, available_accounts, None, client.region.clone()),
             action_manager: ActionManager::default(),
             notifications: Notifications::default(),
             selected_component: DashboardComponents::default(),
