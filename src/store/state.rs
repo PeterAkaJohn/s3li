@@ -125,7 +125,6 @@ impl State {
                             if let Some(folder) = &self.app_state.explorer.selected_folder {
                                 self.app_state.notifications.push(format!("Folder {} has been selected", folder.name), false);
                             }
-                            self.tx.send(self.app_state.clone())?;
                         },
                         Action::SetSource(source_idx) => {
                             let bucket = self.app_state.sources.set_source_with_idx(source_idx);
@@ -139,7 +138,6 @@ impl State {
                             if let Some(bucket) = bucket {
                                 self.app_state.notifications.push(format!("Source {bucket} has been selected"), false);
                             }
-                            self.tx.send(self.app_state.clone())?;
                         },
                         Action::SetAccount(account_idx) => {
                             let account = self.app_state.accounts.available_accounts.get(account_idx).map(|val| val.as_str()).unwrap_or("default");
@@ -149,13 +147,11 @@ impl State {
                             let sources = if let Ok(buckets) = buckets {buckets} else {vec![]};
                             self.app_state.sources.set_available_sources(sources);
                             self.app_state.notifications.push(format!("Account {account} has been selected"), false);
-                            self.tx.send(self.app_state.clone())?;
                         },
                         Action::ChangeRegion(new_region) => {
                             self.client.change_region(new_region.clone()).await;
                             self.app_state.accounts.region = new_region.clone();
                             self.app_state.notifications.push(format!("Region changed to {new_region}"), false);
-                            self.tx.send(self.app_state.clone())?;
                         }
                         Action::RefreshCredentials => {
 
@@ -170,9 +166,6 @@ impl State {
                             available_accounts.sort();
                             self.app_state.accounts.available_accounts = available_accounts;
                             self.app_state.notifications.push("Credentials refreshed".to_string(), false);
-
-                            self.tx.send(self.app_state.clone())?;
-
                         }
 
                         Action::EditCredentials(account, properties) => {
@@ -187,7 +180,6 @@ impl State {
                             available_accounts.sort();
                             self.app_state.accounts.available_accounts = available_accounts;
                             self.app_state.notifications.push("Credentials updated".to_string(), false);
-                            self.tx.send(self.app_state.clone())?;
 
                         }
                         Action::DownloadFile(key, file_name) => {
@@ -202,7 +194,6 @@ impl State {
                                     self.app_state.notifications.push(format!("File {key} downloaded to current location with name {file_name}"), false);
                                 }
                             }
-                            self.tx.send(self.app_state.clone())?;
 
                         }
 
@@ -216,15 +207,15 @@ impl State {
                                 },
                                 _ => {}
                             }
-                            self.tx.send(self.app_state.clone())?;
                         }
 
                         Action::SetSelectedComponent(selected_component) => {
                             self.app_state.selected_component = selected_component;
-                            self.tx.send(self.app_state.clone())?;
                         }
 
-                    }
+                    };
+
+                    self.tx.send(self.app_state.clone())?;
                 }
             }
         }
