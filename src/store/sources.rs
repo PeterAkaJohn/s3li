@@ -9,12 +9,6 @@ pub enum Sources {
     Buckets(Buckets),
 }
 
-impl Default for Sources {
-    fn default() -> Self {
-        Self::Buckets(Buckets::default())
-    }
-}
-
 impl WithSources for Sources {
     fn set_source_with_idx(&mut self, idx: usize) -> &Option<String> {
         match self {
@@ -34,9 +28,15 @@ impl WithSources for Sources {
         }
     }
 
-    fn set_available_sources(&mut self, sources: Vec<String>) {
+    async fn update_available_sources(&mut self) {
         match self {
-            Sources::Buckets(buckets) => buckets.set_available_sources(sources),
+            Sources::Buckets(buckets) => buckets.update_available_sources().await,
+        };
+    }
+
+    async fn download_file(&self, key: &str, file_name: &str) -> anyhow::Result<bool> {
+        match self {
+            Sources::Buckets(buckets) => buckets.download_file(key, file_name).await,
         }
     }
 }
