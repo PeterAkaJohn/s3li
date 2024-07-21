@@ -31,8 +31,8 @@ impl AwsClient {
             client,
         }
     }
-    pub async fn switch_account(&mut self, new_account: &str) {
-        self.account = new_account.to_string();
+
+    async fn refresh_client(&mut self) {
         let credentials_provider = ProfileFileCredentialsProvider::builder()
             .profile_name(&self.account)
             .build();
@@ -41,23 +41,16 @@ impl AwsClient {
             .region(Region::new(self.region.clone()))
             .load()
             .await;
-
         self.client = Client::new(&config);
     }
+
+    pub async fn switch_account(&mut self, new_account: &str) {
+        self.account = new_account.to_string();
+        self.refresh_client().await;
+    }
     pub async fn change_region(&mut self, region: String) {
-        // let credentials_provider = ProfileFileCredentialsProvider::builder()
-        //     .profile_name(&self.account)
-        //     .build();
-        // let config = aws_config::defaults(BehaviorVersion::v2024_03_28())
-        //     .credentials_provider(credentials_provider)
-        //     .region(Region::new(self.region.clone()))
-        //     .load()
-        //     .await;
         self.region = region.clone();
-        self.client
-            .config()
-            .to_builder()
-            .region(Region::new(region.clone()));
+        self.refresh_client().await;
     }
 
     pub async fn list_buckets(&self) -> Result<Vec<String>> {

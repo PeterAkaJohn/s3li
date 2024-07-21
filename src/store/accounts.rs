@@ -40,16 +40,11 @@ impl Accounts {
 
     pub async fn change_region(&mut self, new_region: String) {
         self.region = new_region.clone();
-        self.client
-            .clone()
-            .lock()
-            .await
-            .change_region(new_region)
-            .await;
+        self.client.lock().await.change_region(new_region).await;
     }
 
     pub async fn refresh_credentials(&mut self) {
-        let account_map = self.client.clone().lock().await.list_accounts();
+        let account_map = self.client.lock().await.list_accounts();
 
         let mut available_accounts: Vec<String> = account_map
             .clone()

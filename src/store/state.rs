@@ -116,9 +116,7 @@ impl State {
                             } else {
                                 self.app_state.notifications.push(format!("File {key} downloaded to current location with name {file_name}"), false);
                             }
-
                         }
-
                         Action::CycleSelectedComponent => {
                             match self.app_state.selected_component {
                                 DashboardComponents::Sources => {
@@ -130,11 +128,9 @@ impl State {
                                 _ => {}
                             }
                         }
-
                         Action::SetSelectedComponent(selected_component) => {
                             self.app_state.selected_component = selected_component;
                         }
-
                     };
 
                     self.tx.send(self.app_state.clone())?;
