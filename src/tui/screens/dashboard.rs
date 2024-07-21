@@ -95,17 +95,6 @@ impl Dashboard {
     fn change_selected_component(&mut self) {
         let _ = self.ui_tx.send(Action::CycleSelectedComponent);
     }
-
-    fn set_explorer_selected(&mut self) {
-        let _ = self
-            .ui_tx
-            .send(Action::SetSelectedComponent(DashboardComponents::Explorer));
-    }
-    fn set_sources_selected(&mut self) {
-        let _ = self
-            .ui_tx
-            .send(Action::SetSelectedComponent(DashboardComponents::Sources));
-    }
 }
 
 impl Component for Dashboard {
@@ -169,14 +158,12 @@ impl Component for Dashboard {
                 | crossterm::event::KeyCode::Char('l') => self.change_selected_component(),
                 crossterm::event::KeyCode::Enter => {
                     self.sources.handle_key_events(key);
-                    self.set_explorer_selected();
                 }
                 _ => self.sources.handle_key_events(key),
             },
             DashboardComponents::Explorer => match keycode {
                 crossterm::event::KeyCode::Esc => {
                     self.explorer.handle_key_events(key);
-                    self.set_sources_selected();
                 }
                 _ => self.explorer.handle_key_events(key),
             },

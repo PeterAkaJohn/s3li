@@ -11,7 +11,10 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
     action::Action,
-    store::explorer::{FileTree, Folder, TreeItem},
+    store::{
+        explorer::{FileTree, Folder, TreeItem},
+        state::DashboardComponents,
+    },
     tui::components::{
         list::WithList,
         popup::WithPopup,
@@ -119,6 +122,9 @@ impl Component for Explorer {
             crossterm::event::KeyCode::Esc => {
                 self.unselect();
                 self.set_active_idx(None);
+                let _ = self
+                    .ui_tx
+                    .send(Action::SetSelectedComponent(DashboardComponents::Sources));
             }
             crossterm::event::KeyCode::Up | crossterm::event::KeyCode::Char('k') => {
                 self.select_previous();

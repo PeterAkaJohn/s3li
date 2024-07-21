@@ -87,6 +87,7 @@ impl State {
                             let bucket = self.app_state.sources.set_source_with_idx(source_idx);
                             if let Some(bucket) = bucket {
                                 self.app_state.explorer.create_file_tree(bucket).await;
+                                self.app_state.selected_component = DashboardComponents::Explorer;
                                 self.app_state.notifications.push(format!("Source {bucket} has been selected"), false);
                             }
                         },
