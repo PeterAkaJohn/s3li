@@ -8,8 +8,6 @@ use aws_config::{profile::ProfileFileCredentialsProvider, BehaviorVersion, Regio
 use aws_sdk_s3::Client;
 pub use credentials::{AuthProperties, Credentials};
 
-use crate::logger::LOGGER;
-
 #[derive(Debug, Clone)]
 pub struct AwsClient {
     account: String,
