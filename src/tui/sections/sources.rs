@@ -1,10 +1,11 @@
 use tokio::sync::mpsc::UnboundedSender;
 
-use crate::action::Action;
-
-use super::{
-    component::{Component, ComponentProps},
-    list::ListComponent,
+use crate::{
+    action::Action,
+    tui::components::{
+        list::ListComponent,
+        traits::{Component, ComponentProps},
+    },
 };
 
 pub struct Sources {
@@ -42,7 +43,7 @@ impl Component for Sources {
         self.component.handle_key_events(key);
         if let crossterm::event::KeyCode::Enter = key.code {
             if let Some(idx) = self.component.get_active_idx() {
-                self.ui_tx.send(Action::SetSource(idx));
+                let _ = self.ui_tx.send(Action::SetSource(idx));
             }
         };
     }

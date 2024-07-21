@@ -11,10 +11,10 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::{
     action::Action,
     logger::LOGGER,
-    tui::{
-        component::{Component, ComponentProps, WithContainer},
-        components::input::Input,
+    tui::components::{
+        input::Input,
         popup::WithPopup,
+        traits::{Component, ComponentProps, WithContainer},
     },
 };
 

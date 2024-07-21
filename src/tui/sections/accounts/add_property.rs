@@ -1,19 +1,12 @@
-use anyhow::Result;
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Layout},
     widgets::Clear,
 };
-use tokio::sync::mpsc;
 
-use crate::{
-    action::Action,
-    logger::LOGGER,
-    tui::{
-        component::{Component, ComponentProps, WithContainer},
-        components::input::Input,
-        popup::WithPopup,
-    },
+use crate::tui::components::{
+    input::Input,
+    popup::WithPopup,
+    traits::{Component, ComponentProps, WithContainer},
 };
 
 enum Selected {
@@ -98,7 +91,7 @@ impl Component for AddProperty {
         &mut self,
         f: &mut ratatui::Frame,
         _area: ratatui::prelude::Rect,
-        _props: Option<crate::tui::component::ComponentProps>,
+        _props: Option<ComponentProps>,
     ) {
         let container =
             self.with_container("Add Property", &Some(ComponentProps { selected: true }));

@@ -6,16 +6,17 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
     action::Action,
-    logger::LOGGER,
-    store::state::{AppState, DashboardComponents},
-};
-
-use super::{
-    accounts::Accounts,
-    component::{Component, ComponentProps},
-    explorer::Explorer,
-    notifications::NotificationsUI,
-    sources::Sources,
+    store::{
+        sources::WithSources,
+        state::{AppState, DashboardComponents},
+    },
+    tui::{
+        components::traits::{Component, ComponentProps},
+        sections::{
+            accounts::Accounts, explorer::Explorer, notifications::NotificationsUI,
+            sources::Sources,
+        },
+    },
 };
 
 pub struct Dashboard {
@@ -33,7 +34,7 @@ impl Dashboard {
     where
         Self: Sized,
     {
-        let sources = Sources::new(&state.sources.available_sources, &None, ui_tx.clone());
+        let sources = Sources::new(state.sources.get_available_sources(), &None, ui_tx.clone());
         let accounts = Accounts::new(
             &state.accounts.available_accounts,
             state.accounts.account_map.clone(),
@@ -56,8 +57,8 @@ impl Dashboard {
     }
     pub fn refresh_components(self, state: &AppState) -> Self {
         let sources = Sources::new(
-            &state.sources.available_sources,
-            &state.sources.active_source,
+            state.sources.get_available_sources(),
+            state.sources.get_active_source(),
             self.ui_tx.clone(),
         );
         let accounts = Accounts::new(
@@ -93,17 +94,6 @@ impl Dashboard {
     }
     fn change_selected_component(&mut self) {
         let _ = self.ui_tx.send(Action::CycleSelectedComponent);
-    }
-
-    fn set_explorer_selected(&mut self) {
-        let _ = self
-            .ui_tx
-            .send(Action::SetSelectedComponent(DashboardComponents::Explorer));
-    }
-    fn set_sources_selected(&mut self) {
-        let _ = self
-            .ui_tx
-            .send(Action::SetSelectedComponent(DashboardComponents::Sources));
     }
 }
 
@@ -168,14 +158,12 @@ impl Component for Dashboard {
                 | crossterm::event::KeyCode::Char('l') => self.change_selected_component(),
                 crossterm::event::KeyCode::Enter => {
                     self.sources.handle_key_events(key);
-                    self.set_explorer_selected();
                 }
                 _ => self.sources.handle_key_events(key),
             },
             DashboardComponents::Explorer => match keycode {
                 crossterm::event::KeyCode::Esc => {
                     self.explorer.handle_key_events(key);
-                    self.set_sources_selected();
                 }
                 _ => self.explorer.handle_key_events(key),
             },

@@ -1,9 +1,9 @@
 use anyhow::Result;
 use crossterm::event::KeyEvent;
 use ratatui::{
-    layout::Rect,
-    style::{Style, Stylize},
-    widgets::{block::Title, Block, Borders, Padding},
+    layout::{self, Rect},
+    style::{self, Stylize},
+    widgets::{self, Block},
     Frame,
 };
 
@@ -36,21 +36,22 @@ pub trait Component {
     //   }
     fn render(&mut self, f: &mut Frame, area: Rect, props: Option<ComponentProps>);
 }
+
 pub trait WithContainer<'a> {
     fn with_container(&self, container_title: &'a str, props: &Option<ComponentProps>) -> Block<'a>
     where
         Self: Sized,
     {
         let container = Block::default()
-            .borders(Borders::ALL)
-            .border_type(ratatui::widgets::BorderType::Rounded)
-            .padding(Padding::horizontal(1));
+            .borders(widgets::Borders::ALL)
+            .border_type(widgets::BorderType::Rounded)
+            .padding(widgets::block::Padding::horizontal(1));
         match props {
             Some(ComponentProps { selected: true }) => container
-                .border_style(Style::default().green())
-                .title_alignment(ratatui::layout::Alignment::Center)
-                .title(Title::default().content(container_title)),
-            _ => container.border_style(Style::default()),
+                .border_style(style::Style::default().green())
+                .title_alignment(layout::Alignment::Center)
+                .title(widgets::block::Title::default().content(container_title)),
+            _ => container.border_style(style::Style::default()),
         }
     }
 }

@@ -1,10 +1,4 @@
-mod accounts;
-mod component;
-pub mod components;
-mod dashboard;
-mod explorer;
-mod list;
-pub mod notifications;
-mod popup;
-mod sources;
+mod components;
+mod screens;
+mod sections;
 pub mod ui;
