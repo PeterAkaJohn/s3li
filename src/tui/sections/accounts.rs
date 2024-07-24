@@ -12,9 +12,9 @@ use crate::{
     logger::LOGGER,
     providers::AccountMap,
     tui::components::{
-        list::{ListComponent, WithList},
+        list::ListComponent,
         popup::WithPopup,
-        traits::{Component, ComponentProps},
+        traits::{Component, ComponentProps, WithList},
     },
 };
 

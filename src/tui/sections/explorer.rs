@@ -18,7 +18,7 @@ use crate::{
     tui::components::{
         list::WithList,
         popup::WithPopup,
-        traits::{Component, ComponentProps, WithContainer},
+        traits::{Component, ComponentProps, WithContainer, WithList},
     },
 };
 

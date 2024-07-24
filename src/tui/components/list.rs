@@ -6,45 +6,16 @@ use ratatui::{
     widgets::{List, ListItem, ListState, Paragraph},
 };
 
-use super::traits::{Component, ComponentProps, WithContainer};
+use crate::logger::LOGGER;
 
-pub trait WithList {
-    fn get_list_items_len(&self) -> usize;
-    fn get_list_state_selected(&self) -> Option<usize>;
-    fn set_selected(&mut self, idx: Option<usize>);
-    fn unselect(&mut self) {
-        self.set_selected(None);
-    }
-    fn select_next(&mut self) {
-        let list_state_selected = self.get_list_state_selected();
-        let list_len = self.get_list_items_len();
-        let idx = match list_state_selected {
-            Some(selected_idx) => {
-                if selected_idx == list_len - 1 {
-                    0
-                } else {
-                    selected_idx + 1
-                }
-            }
-            None => 0,
-        };
-        self.set_selected(Some(idx))
-    }
-    fn select_previous(&mut self) {
-        let list_state_selected = self.get_list_state_selected();
-        let list_len = self.get_list_items_len();
-        let idx = match list_state_selected {
-            Some(selected_idx) => {
-                if selected_idx == 0 {
-                    list_len - 1
-                } else {
-                    selected_idx - 1
-                }
-            }
-            None => list_len - 1,
-        };
-        self.set_selected(Some(idx))
-    }
+use super::traits::{
+    Component, ComponentProps, SelectionDirection, WithContainer, WithList, WithSelection,
+};
+
+#[derive(Debug)]
+pub enum ListMode {
+    Normal,
+    Selection,
 }
 
 pub struct ListComponent<T> {
@@ -52,6 +23,8 @@ pub struct ListComponent<T> {
     items: Vec<T>,
     title: String,
     active_idx: Option<usize>,
+    selection: Option<(usize, usize)>,
+    mode: ListMode,
 }
 
 impl ListComponent<String> {
@@ -66,6 +39,8 @@ impl ListComponent<String> {
             items,
             title,
             active_idx,
+            selection: None,
+            mode: ListMode::Normal,
         };
         list.list_state.select(active_idx);
         list
@@ -100,6 +75,28 @@ impl WithList for ListComponent<String> {
 }
 
 impl WithContainer<'_> for ListComponent<String> {}
+
+impl WithSelection for ListComponent<String> {
+    fn start_selection(&mut self, idx: usize) {
+        self.mode = ListMode::Selection;
+        self.selection = Some((idx, idx));
+    }
+    fn end_selection(&mut self) {
+        self.mode = ListMode::Normal;
+        self.selection = None;
+    }
+
+    fn get_selection(&self) -> &Option<(usize, usize)> {
+        &self.selection
+    }
+
+    fn resize_selection(&mut self, direction: SelectionDirection) {
+        let idx = self.get_list_state_selected();
+        if let (Some(idx), Some((min, max))) = (idx, self.selection) {
+            self.selection = self.compute_selection(min, max, idx, direction);
+        }
+    }
+}
 
 impl Component for ListComponent<String> {
     fn render(
@@ -139,10 +136,30 @@ impl Component for ListComponent<String> {
             let list_items = self
                 .items
                 .iter()
-                .map(|key| {
+                .enumerate()
+                .map(|(index, key)| {
+                    let is_selected = if let Some((min_bound, max_bound)) = self.selection {
+                        index <= max_bound && index >= min_bound
+                    } else {
+                        false
+                    };
+                    let mut line_item_label = format!("{: <25}", key);
+                    let line_item_label = if line_item_label.chars().count() < area.width.into() {
+                        // calc difference and add whitespaces
+                        let diff = (area.width as usize) - line_item_label.chars().count();
+                        let additions = " ".repeat(diff);
+                        line_item_label.push_str(&additions);
+                        line_item_label
+                    } else {
+                        line_item_label
+                    };
                     ListItem::new(Line::from(Span::styled(
-                        format!("{: <25}", key),
-                        default_style,
+                        line_item_label,
+                        if is_selected {
+                            active_style
+                        } else {
+                            default_style
+                        },
                     )))
                 })
                 .collect::<Vec<ListItem>>();
@@ -165,20 +182,67 @@ impl Component for ListComponent<String> {
             return;
         }
         match key.code {
+            crossterm::event::KeyCode::Esc if matches!(self.mode, ListMode::Selection) => {
+                self.end_selection();
+            }
+            crossterm::event::KeyCode::Char('v') => {
+                if matches!(self.mode, ListMode::Normal) {
+                    let current_idx = self.get_list_state_selected();
+                    if let Some(idx) = current_idx {
+                        self.start_selection(idx);
+                    }
+                } else {
+                    self.end_selection();
+                }
+            }
             crossterm::event::KeyCode::Esc => {
                 self.unselect();
                 self.set_active_idx(None);
             }
             crossterm::event::KeyCode::Up | crossterm::event::KeyCode::Char('k') => {
                 self.select_previous();
+                if matches!(self.mode, ListMode::Selection) {
+                    self.resize_selection(SelectionDirection::Up);
+                }
             }
             crossterm::event::KeyCode::Down | crossterm::event::KeyCode::Char('j') => {
                 self.select_next();
+                if matches!(self.mode, ListMode::Selection) {
+                    self.resize_selection(SelectionDirection::Down);
+                }
             }
             crossterm::event::KeyCode::Enter => {
                 self.set_active_idx(self.get_list_state_selected());
             }
             _ => {}
         };
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::tui::components::traits::WithSelection;
+
+    use super::ListComponent;
+
+    #[test]
+    fn with_selection_list_component() {
+        let items: Vec<String> = ["test1", "test2", "test3", "test4", "test5", "test6"]
+            .iter()
+            .map(|item| item.to_string())
+            .collect();
+        let active_element = None;
+        let mut list_component = ListComponent::new("test".to_string(), items, active_element);
+
+        assert!(matches!(
+            list_component.mode,
+            crate::tui::components::list::ListMode::Normal
+        ));
+        list_component.start_selection(0);
+        assert!(matches!(
+            list_component.mode,
+            crate::tui::components::list::ListMode::Selection
+        ));
+        assert_eq!(list_component.selection, Some((0, 0)));
     }
 }
