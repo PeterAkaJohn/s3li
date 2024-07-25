@@ -34,16 +34,19 @@ impl ListComponent<String> {
         active_element: Option<String>,
     ) -> ListComponent<String> {
         let active_idx = active_element.and_then(|acc| items.iter().position(|val| *val == acc));
-        let mut list = ListComponent {
-            list_state: ListState::default(),
+        let selected_idx = if !items.is_empty() { Some(0) } else { None };
+        ListComponent {
+            list_state: ListState::default().with_selected(if active_idx.is_some() {
+                active_idx
+            } else {
+                selected_idx
+            }),
             items,
             title,
             active_idx,
             selection: None,
             mode: ListMode::Normal,
-        };
-        list.list_state.select(active_idx);
-        list
+        }
     }
     pub fn set_active_idx(&mut self, active_idx: Option<usize>) {
         self.active_idx = active_idx;
@@ -91,6 +94,11 @@ impl WithSelection for ListComponent<String> {
     }
 
     fn resize_selection(&mut self, direction: SelectionDirection) {
+        if matches!(direction, SelectionDirection::Up) {
+            self.select_previous();
+        } else {
+            self.select_next();
+        };
         let idx = self.get_list_state_selected();
         if let (Some(idx), Some((min, max))) = (idx, self.selection) {
             self.selection = self.compute_selection(min, max, idx, direction);
@@ -200,15 +208,17 @@ impl Component for ListComponent<String> {
                 self.set_active_idx(None);
             }
             crossterm::event::KeyCode::Up | crossterm::event::KeyCode::Char('k') => {
-                self.select_previous();
                 if matches!(self.mode, ListMode::Selection) {
                     self.resize_selection(SelectionDirection::Up);
+                } else {
+                    self.select_previous();
                 }
             }
             crossterm::event::KeyCode::Down | crossterm::event::KeyCode::Char('j') => {
-                self.select_next();
                 if matches!(self.mode, ListMode::Selection) {
                     self.resize_selection(SelectionDirection::Down);
+                } else {
+                    self.select_next();
                 }
             }
             crossterm::event::KeyCode::Enter => {
@@ -221,7 +231,7 @@ impl Component for ListComponent<String> {
 
 #[cfg(test)]
 mod tests {
-    use crate::tui::components::traits::WithSelection;
+    use crate::tui::components::traits::{SelectionDirection, WithSelection};
 
     use super::ListComponent;
 
@@ -243,6 +253,11 @@ mod tests {
             list_component.mode,
             crate::tui::components::list::ListMode::Selection
         ));
+        assert_eq!(list_component.selection, Some((0, 0)));
+
+        list_component.resize_selection(SelectionDirection::Down);
+        assert_eq!(list_component.selection, Some((0, 1)));
+        list_component.resize_selection(SelectionDirection::Up);
         assert_eq!(list_component.selection, Some((0, 0)));
     }
 }
