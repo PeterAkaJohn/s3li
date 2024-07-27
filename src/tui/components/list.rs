@@ -90,21 +90,11 @@ impl WithSelection for ListComponent<String> {
         self.mode = ListMode::Normal;
         self.selection = None;
     }
-
     fn get_selection(&self) -> &Option<(usize, usize)> {
         &self.selection
     }
-
-    fn resize_selection(&mut self, direction: SelectionDirection) {
-        if matches!(direction, SelectionDirection::Up) {
-            self.select_previous();
-        } else {
-            self.select_next();
-        };
-        let idx = self.get_list_state_selected();
-        if let (Some(idx), Some((min, max))) = (idx, self.selection) {
-            self.selection = self.compute_selection(min, max, idx, direction);
-        }
+    fn set_selection(&mut self, selection: Option<(usize, usize)>) {
+        self.selection = selection;
     }
 }
 
