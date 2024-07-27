@@ -1,3 +1,4 @@
+pub mod functions;
 pub mod input;
 pub mod list;
 pub mod popup;
