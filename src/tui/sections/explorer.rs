@@ -16,9 +16,12 @@ use crate::{
         state::DashboardComponents,
     },
     tui::components::{
-        list::WithList,
+        functions::add_white_space_till_width_if_needed,
+        list::ListMode,
         popup::WithPopup,
-        traits::{Component, ComponentProps, WithContainer, WithList},
+        traits::{
+            Component, ComponentProps, SelectionDirection, WithContainer, WithList, WithSelection,
+        },
     },
 };
 
@@ -30,6 +33,8 @@ pub struct Explorer {
     ui_tx: UnboundedSender<Action>,
     current_folder_idx: Option<usize>,
     download_component: Download,
+    mode: ListMode,
+    selection: Option<(usize, usize)>,
 }
 
 impl Explorer {
@@ -69,6 +74,8 @@ impl Explorer {
             ui_tx: ui_tx.clone(),
             current_folder_idx,
             download_component: Download::new(ui_tx.clone()),
+            selection: None,
+            mode: ListMode::Normal,
         }
     }
     pub fn set_active_idx(&mut self, active_idx: Option<usize>) {
@@ -92,6 +99,33 @@ impl WithList for Explorer {
     }
 }
 
+impl WithSelection for Explorer {
+    fn start_selection(&mut self, idx: usize) {
+        self.mode = ListMode::Selection;
+        self.selection = Some((idx, idx));
+    }
+    fn end_selection(&mut self) {
+        self.mode = ListMode::Normal;
+        self.selection = None;
+    }
+
+    fn get_selection(&self) -> &Option<(usize, usize)> {
+        &self.selection
+    }
+
+    fn resize_selection(&mut self, direction: SelectionDirection) {
+        if matches!(direction, SelectionDirection::Up) {
+            self.select_previous();
+        } else {
+            self.select_next();
+        };
+        let idx = self.get_list_state_selected();
+        if let (Some(idx), Some((min, max))) = (idx, self.selection) {
+            self.selection = self.compute_selection(min, max, idx, direction);
+        }
+    }
+}
+
 impl Component for Explorer {
     fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
         if key.kind != KeyEventKind::Press {
@@ -105,6 +139,19 @@ impl Component for Explorer {
             return;
         }
         match key.code {
+            crossterm::event::KeyCode::Esc if matches!(self.mode, ListMode::Selection) => {
+                self.end_selection();
+            }
+            crossterm::event::KeyCode::Char('v') => {
+                if matches!(self.mode, ListMode::Normal) {
+                    let current_idx = self.get_list_state_selected();
+                    if let Some(idx) = current_idx {
+                        self.start_selection(idx);
+                    }
+                } else {
+                    self.end_selection();
+                }
+            }
             crossterm::event::KeyCode::Enter => {
                 let selected_idx = self.get_list_state_selected();
                 self.set_active_idx(selected_idx);
@@ -127,10 +174,18 @@ impl Component for Explorer {
                     .send(Action::SetSelectedComponent(DashboardComponents::Sources));
             }
             crossterm::event::KeyCode::Up | crossterm::event::KeyCode::Char('k') => {
-                self.select_previous();
+                if matches!(self.mode, ListMode::Selection) {
+                    self.resize_selection(SelectionDirection::Up);
+                } else {
+                    self.select_previous();
+                }
             }
             crossterm::event::KeyCode::Down | crossterm::event::KeyCode::Char('j') => {
-                self.select_next();
+                if matches!(self.mode, ListMode::Selection) {
+                    self.resize_selection(SelectionDirection::Down);
+                } else {
+                    self.select_next();
+                }
             }
             crossterm::event::KeyCode::Char('d') => {
                 let selected_idx = self.get_list_state_selected();
@@ -154,16 +209,16 @@ impl Component for Explorer {
 
         let active_style = Style::default().fg(Color::Green).bg(Color::LightBlue);
         let default_style = Style::default().fg(Color::White);
-        let mut file_tree_iterator = self.file_tree.iter().peekable();
 
-        let mut list_items: Vec<ListItem> = vec![];
-        if let Some(ComponentProps { selected: true }) = props {
-            while let Some(tree_item) = file_tree_iterator.next() {
+        let list_items = if let Some(ComponentProps { selected: true }) = props {
+            let mut file_tree_iterator = self.file_tree.iter().enumerate().peekable();
+            let mut items = vec![];
+            while let Some((idx, tree_item)) = file_tree_iterator.next() {
                 let label = match tree_item {
                     TreeItem::Folder(folder, _) => {
                         let arrow_char = match file_tree_iterator.peek() {
-                            Some(TreeItem::Folder(_, Some(parent)))
-                            | Some(TreeItem::File(_, Some(parent))) => {
+                            Some((_, TreeItem::Folder(_, Some(parent))))
+                            | Some((_, TreeItem::File(_, Some(parent)))) => {
                                 if parent.name == folder.name {
                                     "▼"
                                 } else {
@@ -172,16 +227,37 @@ impl Component for Explorer {
                             }
                             _ => "▶",
                         };
-                        format!("{} {}", arrow_char, folder.relative_name)
+                        format!(
+                            "{} {}",
+                            arrow_char,
+                            add_white_space_till_width_if_needed(
+                                &folder.relative_name,
+                                area.width.into()
+                            )
+                        )
                     }
-                    TreeItem::File(file, _) => file.relative_name.to_string(),
+                    TreeItem::File(file, _) => {
+                        add_white_space_till_width_if_needed(&file.relative_name, area.width.into())
+                    }
                 };
-                list_items.push(ListItem::new(Line::from(Span::styled(
+                let is_selected = if let Some((min_bound, max_bound)) = self.selection {
+                    idx <= max_bound && idx >= min_bound
+                } else {
+                    false
+                };
+                items.push(ListItem::new(Line::from(Span::styled(
                     tree_item.with_indentation(label),
-                    default_style,
+                    if is_selected {
+                        active_style
+                    } else {
+                        default_style
+                    },
                 ))));
             }
-        }
+            items
+        } else {
+            vec![]
+        };
         let list = List::new(list_items)
             .block(container)
             .scroll_padding(2)
