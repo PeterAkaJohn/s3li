@@ -1,3 +1,5 @@
+use std::usize;
+
 use crossterm::event::KeyEventKind;
 use ratatui::{
     layout::{Constraint, Direction, Layout},
@@ -6,7 +8,7 @@ use ratatui::{
     widgets::{List, ListItem, ListState, Paragraph},
 };
 
-use crate::logger::LOGGER;
+use crate::tui::components::functions::add_white_space_till_width_if_needed;
 
 use super::traits::{
     Component, ComponentProps, SelectionDirection, WithContainer, WithList, WithSelection,
@@ -151,16 +153,10 @@ impl Component for ListComponent<String> {
                     } else {
                         false
                     };
-                    let mut line_item_label = format!("{: <25}", key);
-                    let line_item_label = if line_item_label.chars().count() < area.width.into() {
-                        // calc difference and add whitespaces
-                        let diff = (area.width as usize) - line_item_label.chars().count();
-                        let additions = " ".repeat(diff);
-                        line_item_label.push_str(&additions);
-                        line_item_label
-                    } else {
-                        line_item_label
-                    };
+                    let line_item_label = add_white_space_till_width_if_needed(
+                        &format!("{: <25}", key),
+                        area.width as usize,
+                    );
                     ListItem::new(Line::from(Span::styled(
                         line_item_label,
                         if is_selected {
