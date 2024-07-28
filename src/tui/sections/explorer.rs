@@ -20,7 +20,8 @@ use crate::{
         list::ListMode,
         popup::WithPopup,
         traits::{
-            Component, ComponentProps, SelectionDirection, WithContainer, WithList, WithSelection,
+            Component, ComponentProps, SelectionDirection, WithBlockSelection, WithContainer,
+            WithList,
         },
     },
 };
@@ -99,7 +100,7 @@ impl WithList for Explorer {
     }
 }
 
-impl WithSelection for Explorer {
+impl WithBlockSelection for Explorer {
     fn start_selection(&mut self, idx: usize) {
         self.mode = ListMode::Selection;
         self.selection = Some((idx, idx));

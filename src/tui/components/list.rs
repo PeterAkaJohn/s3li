@@ -11,7 +11,7 @@ use ratatui::{
 use crate::tui::components::functions::add_white_space_till_width_if_needed;
 
 use super::traits::{
-    Component, ComponentProps, SelectionDirection, WithContainer, WithList, WithSelection,
+    Component, ComponentProps, SelectionDirection, WithBlockSelection, WithContainer, WithList,
 };
 
 #[derive(Debug)]
@@ -81,7 +81,7 @@ impl WithList for ListComponent<String> {
 
 impl WithContainer<'_> for ListComponent<String> {}
 
-impl WithSelection for ListComponent<String> {
+impl WithBlockSelection for ListComponent<String> {
     fn start_selection(&mut self, idx: usize) {
         self.mode = ListMode::Selection;
         self.selection = Some((idx, idx));
@@ -217,7 +217,7 @@ impl Component for ListComponent<String> {
 
 #[cfg(test)]
 mod tests {
-    use crate::tui::components::traits::{SelectionDirection, WithSelection};
+    use crate::tui::components::traits::{SelectionDirection, WithBlockSelection};
 
     use super::ListComponent;
 

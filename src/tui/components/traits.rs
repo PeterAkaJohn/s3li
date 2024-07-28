@@ -107,7 +107,7 @@ pub enum SelectionDirection {
     Up,
     Down,
 }
-pub trait WithSelection: WithList {
+pub trait WithBlockSelection: WithList {
     fn start_selection(&mut self, idx: usize);
     fn end_selection(&mut self);
     fn get_selection(&self) -> &Option<(usize, usize)>;
@@ -144,7 +144,7 @@ pub trait WithSelection: WithList {
 
 #[cfg(test)]
 mod tests {
-    use super::{WithList, WithSelection};
+    use super::{WithBlockSelection, WithList};
 
     #[derive(Default)]
     struct MockList {
@@ -164,7 +164,7 @@ mod tests {
         fn set_selected(&mut self, _idx: Option<usize>) {}
     }
 
-    impl WithSelection for MockList {
+    impl WithBlockSelection for MockList {
         fn start_selection(&mut self, idx: usize) {
             self.selection = Some((idx, idx));
         }
