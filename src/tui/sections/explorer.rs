@@ -35,7 +35,7 @@ pub struct Explorer {
     current_folder_idx: Option<usize>,
     download_component: Download,
     mode: ListMode,
-    selection: Option<(usize, usize)>,
+    selection: Vec<usize>,
 }
 
 impl Explorer {
@@ -75,7 +75,7 @@ impl Explorer {
             ui_tx: ui_tx.clone(),
             current_folder_idx,
             download_component: Download::new(ui_tx.clone()),
-            selection: None,
+            selection: vec![],
             mode: ListMode::Normal,
         }
     }
@@ -103,19 +103,24 @@ impl WithList for Explorer {
 impl WithBlockSelection for Explorer {
     fn start_selection(&mut self, idx: usize) {
         self.mode = ListMode::Selection;
-        self.selection = Some((idx, idx));
+        self.selection = vec![idx];
     }
     fn end_selection(&mut self) {
         self.mode = ListMode::Normal;
-        self.selection = None;
+        self.selection = vec![];
     }
 
-    fn get_selection(&self) -> &Option<(usize, usize)> {
-        &self.selection
+    fn get_selection(&self) -> Option<(usize, usize)> {
+        let selection = self.selection.iter().min().zip(self.selection.iter().max());
+
+        selection.map(|val| (*val.0, *val.1))
     }
 
     fn set_selection(&mut self, selection: Option<(usize, usize)>) {
-        self.selection = selection;
+        if let Some((min, max)) = selection {
+            let range: Vec<usize> = (min..=max).collect();
+            self.selection = range;
+        }
     }
 }
 
@@ -233,11 +238,7 @@ impl Component for Explorer {
                         add_white_space_till_width_if_needed(&file.relative_name, area.width.into())
                     }
                 };
-                let is_selected = if let Some((min_bound, max_bound)) = self.selection {
-                    idx <= max_bound && idx >= min_bound
-                } else {
-                    false
-                };
+                let is_selected = self.selection.contains(&idx);
                 items.push(ListItem::new(Line::from(Span::styled(
                     tree_item.with_indentation(label),
                     if is_selected {

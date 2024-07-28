@@ -110,7 +110,7 @@ pub enum SelectionDirection {
 pub trait WithBlockSelection: WithList {
     fn start_selection(&mut self, idx: usize);
     fn end_selection(&mut self);
-    fn get_selection(&self) -> &Option<(usize, usize)>;
+    fn get_selection(&self) -> Option<(usize, usize)>;
     fn set_selection(&mut self, selection: Option<(usize, usize)>);
     fn compute_selection(
         &self,
@@ -137,7 +137,7 @@ pub trait WithBlockSelection: WithList {
         };
         let idx = self.get_list_state_selected();
         if let (Some(idx), Some((min, max))) = (idx, self.get_selection()) {
-            self.set_selection(self.compute_selection(*min, *max, idx, direction));
+            self.set_selection(self.compute_selection(min, max, idx, direction));
         }
     }
 }
@@ -177,8 +177,8 @@ mod tests {
             self.selection = selection;
         }
 
-        fn get_selection(&self) -> &Option<(usize, usize)> {
-            &self.selection
+        fn get_selection(&self) -> Option<(usize, usize)> {
+            self.selection
         }
 
         fn resize_selection(&mut self, direction: super::SelectionDirection) {
