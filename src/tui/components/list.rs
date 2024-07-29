@@ -8,16 +8,18 @@ use ratatui::{
     widgets::{List, ListItem, ListState, Paragraph},
 };
 
-use crate::tui::components::functions::add_white_space_till_width_if_needed;
+use crate::{logger::LOGGER, tui::components::functions::add_white_space_till_width_if_needed};
 
 use super::traits::{
-    Component, ComponentProps, SelectionDirection, WithBlockSelection, WithContainer, WithList,
+    Component, ComponentProps, Selection, SelectionDirection, WithBlockSelection, WithContainer,
+    WithList, WithMultiSelection,
 };
 
 #[derive(Debug)]
 pub enum ListMode {
     Normal,
     Selection,
+    Multi,
 }
 
 pub struct ListComponent<T> {
@@ -90,12 +92,12 @@ impl WithBlockSelection for ListComponent<String> {
         self.mode = ListMode::Normal;
         self.selection = vec![];
     }
-    fn get_selection(&self) -> Option<(usize, usize)> {
+    fn get_selection(&self) -> Option<Selection> {
         let selection = self.selection.iter().min().zip(self.selection.iter().max());
 
         selection.map(|val| (*val.0, *val.1))
     }
-    fn set_selection(&mut self, selection: Option<(usize, usize)>) {
+    fn set_selection(&mut self, selection: Option<Selection>) {
         if let Some((min, max)) = selection {
             let range: Vec<usize> = (min..=max).collect();
             self.selection = range;
@@ -103,6 +105,15 @@ impl WithBlockSelection for ListComponent<String> {
     }
 }
 
+impl WithMultiSelection for ListComponent<String> {
+    fn get_multi_selection(&self) -> Vec<usize> {
+        self.selection.clone()
+    }
+
+    fn set_multi_selection(&mut self, selection: Vec<usize>) {
+        self.selection = selection;
+    }
+}
 impl Component for ListComponent<String> {
     fn render(
         &mut self,
@@ -177,7 +188,20 @@ impl Component for ListComponent<String> {
             return;
         }
         match key.code {
-            crossterm::event::KeyCode::Esc if matches!(self.mode, ListMode::Selection) => {
+            crossterm::event::KeyCode::Char(' ') => {
+                self.mode = ListMode::Multi;
+                let current_idx = self.get_list_state_selected();
+                if let Some(idx) = current_idx {
+                    self.toggle_selection(idx);
+                }
+                if self.selection.is_empty() {
+                    self.mode = ListMode::Normal;
+                }
+                LOGGER.info(&format!("selection: {:?}", self.selection));
+            }
+            crossterm::event::KeyCode::Esc
+                if matches!(self.mode, ListMode::Selection | ListMode::Multi) =>
+            {
                 self.end_selection();
             }
             crossterm::event::KeyCode::Char('v') => {

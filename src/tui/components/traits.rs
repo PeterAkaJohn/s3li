@@ -107,18 +107,20 @@ pub enum SelectionDirection {
     Up,
     Down,
 }
+
+pub type Selection = (usize, usize);
 pub trait WithBlockSelection: WithList {
     fn start_selection(&mut self, idx: usize);
     fn end_selection(&mut self);
-    fn get_selection(&self) -> Option<(usize, usize)>;
-    fn set_selection(&mut self, selection: Option<(usize, usize)>);
+    fn get_selection(&self) -> Option<Selection>;
+    fn set_selection(&mut self, selection: Option<Selection>);
     fn compute_selection(
         &self,
         min: usize,
         max: usize,
         idx: usize,
         direction: SelectionDirection,
-    ) -> Option<(usize, usize)> {
+    ) -> Option<Selection> {
         match direction {
             SelectionDirection::Up if idx > min && max > 0 && idx == max - 1 => Some((min, idx)),
             SelectionDirection::Up if min == max && idx > max => Some((min, idx)),
@@ -142,13 +144,31 @@ pub trait WithBlockSelection: WithList {
     }
 }
 
+pub trait WithMultiSelection: WithBlockSelection {
+    fn toggle_selection(&mut self, idx: usize) {
+        let mut current_selection = self.get_multi_selection();
+
+        if let Some(existing_position) = current_selection.iter().position(|val| *val == idx) {
+            current_selection.remove(existing_position);
+        } else {
+            current_selection.push(idx);
+        }
+
+        current_selection.sort();
+        self.set_multi_selection(current_selection.to_vec());
+    }
+    fn get_multi_selection(&self) -> Vec<usize>;
+    fn set_multi_selection(&mut self, selection: Vec<usize>);
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{WithBlockSelection, WithList};
+    use super::{Selection, WithBlockSelection, WithList, WithMultiSelection};
 
     #[derive(Default)]
     struct MockList {
-        selection: Option<(usize, usize)>,
+        selection: Option<Selection>,
+        multi_selection: Vec<usize>,
         pub next_idx: usize,
     }
 
@@ -173,11 +193,11 @@ mod tests {
             self.selection = None;
         }
 
-        fn set_selection(&mut self, selection: Option<(usize, usize)>) {
+        fn set_selection(&mut self, selection: Option<Selection>) {
             self.selection = selection;
         }
 
-        fn get_selection(&self) -> Option<(usize, usize)> {
+        fn get_selection(&self) -> Option<Selection> {
             self.selection
         }
 
@@ -186,6 +206,33 @@ mod tests {
             let (min, max) = self.selection.expect("should not fail within test");
             self.selection = self.compute_selection(min, max, idx, direction)
         }
+    }
+
+    impl WithMultiSelection for MockList {
+        fn get_multi_selection(&self) -> Vec<usize> {
+            self.multi_selection.clone()
+        }
+
+        fn set_multi_selection(&mut self, selection: Vec<usize>) {
+            self.multi_selection = selection
+        }
+    }
+
+    #[test]
+    fn test_with_multi_selection() {
+        let mut mocklist = MockList::default();
+        mocklist.toggle_selection(0);
+        assert_eq!(mocklist.multi_selection, vec![0]);
+        mocklist.toggle_selection(20);
+        assert_eq!(mocklist.multi_selection, vec![0, 20]);
+        mocklist.toggle_selection(10);
+        assert_eq!(mocklist.multi_selection, vec![0, 10, 20]);
+        mocklist.toggle_selection(10);
+        assert_eq!(mocklist.multi_selection, vec![0, 20]);
+        mocklist.toggle_selection(20);
+        assert_eq!(mocklist.multi_selection, vec![0]);
+        mocklist.toggle_selection(0);
+        assert_eq!(mocklist.multi_selection, vec![]);
     }
 
     #[test]
