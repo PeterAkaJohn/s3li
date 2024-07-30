@@ -8,16 +8,18 @@ use ratatui::{
     widgets::{List, ListItem, ListState, Paragraph},
 };
 
-use crate::tui::components::functions::add_white_space_till_width_if_needed;
+use crate::{logger::LOGGER, tui::components::functions::add_white_space_till_width_if_needed};
 
 use super::traits::{
-    Component, ComponentProps, SelectionDirection, WithContainer, WithList, WithSelection,
+    Component, ComponentProps, Selection, SelectionDirection, WithBlockSelection, WithContainer,
+    WithList, WithMultiSelection,
 };
 
 #[derive(Debug)]
 pub enum ListMode {
     Normal,
     Selection,
+    Multi,
 }
 
 pub struct ListComponent<T> {
@@ -25,7 +27,7 @@ pub struct ListComponent<T> {
     items: Vec<T>,
     title: String,
     active_idx: Option<usize>,
-    selection: Option<(usize, usize)>,
+    selection: Vec<usize>,
     mode: ListMode,
 }
 
@@ -46,7 +48,7 @@ impl ListComponent<String> {
             items,
             title,
             active_idx,
-            selection: None,
+            selection: vec![],
             mode: ListMode::Normal,
         }
     }
@@ -81,23 +83,37 @@ impl WithList for ListComponent<String> {
 
 impl WithContainer<'_> for ListComponent<String> {}
 
-impl WithSelection for ListComponent<String> {
+impl WithBlockSelection for ListComponent<String> {
     fn start_selection(&mut self, idx: usize) {
         self.mode = ListMode::Selection;
-        self.selection = Some((idx, idx));
+        self.selection = vec![idx];
     }
     fn end_selection(&mut self) {
         self.mode = ListMode::Normal;
-        self.selection = None;
+        self.selection = vec![];
     }
-    fn get_selection(&self) -> &Option<(usize, usize)> {
-        &self.selection
+    fn get_selection(&self) -> Option<Selection> {
+        let selection = self.selection.iter().min().zip(self.selection.iter().max());
+
+        selection.map(|val| (*val.0, *val.1))
     }
-    fn set_selection(&mut self, selection: Option<(usize, usize)>) {
-        self.selection = selection;
+    fn set_selection(&mut self, selection: Option<Selection>) {
+        if let Some((min, max)) = selection {
+            let range: Vec<usize> = (min..=max).collect();
+            self.selection = range;
+        }
     }
 }
 
+impl WithMultiSelection for ListComponent<String> {
+    fn get_multi_selection(&self) -> &Vec<usize> {
+        &self.selection
+    }
+
+    fn set_multi_selection(&mut self, selection: Vec<usize>) {
+        self.selection = selection;
+    }
+}
 impl Component for ListComponent<String> {
     fn render(
         &mut self,
@@ -138,11 +154,7 @@ impl Component for ListComponent<String> {
                 .iter()
                 .enumerate()
                 .map(|(index, key)| {
-                    let is_selected = if let Some((min_bound, max_bound)) = self.selection {
-                        index <= max_bound && index >= min_bound
-                    } else {
-                        false
-                    };
+                    let is_selected = self.selection.contains(&index);
                     let line_item_label = add_white_space_till_width_if_needed(
                         &format!("{: <25}", key),
                         area.width as usize,
@@ -176,7 +188,20 @@ impl Component for ListComponent<String> {
             return;
         }
         match key.code {
-            crossterm::event::KeyCode::Esc if matches!(self.mode, ListMode::Selection) => {
+            crossterm::event::KeyCode::Char(' ') => {
+                self.mode = ListMode::Multi;
+                let current_idx = self.get_list_state_selected();
+                if let Some(idx) = current_idx {
+                    self.toggle_selection(idx);
+                }
+                if self.selection.is_empty() {
+                    self.mode = ListMode::Normal;
+                }
+                LOGGER.info(&format!("selection: {:?}", self.selection));
+            }
+            crossterm::event::KeyCode::Esc
+                if matches!(self.mode, ListMode::Selection | ListMode::Multi) =>
+            {
                 self.end_selection();
             }
             crossterm::event::KeyCode::Char('v') => {
@@ -217,7 +242,7 @@ impl Component for ListComponent<String> {
 
 #[cfg(test)]
 mod tests {
-    use crate::tui::components::traits::{SelectionDirection, WithSelection};
+    use crate::tui::components::traits::{SelectionDirection, WithBlockSelection};
 
     use super::ListComponent;
 
@@ -239,11 +264,15 @@ mod tests {
             list_component.mode,
             crate::tui::components::list::ListMode::Selection
         ));
-        assert_eq!(list_component.selection, Some((0, 0)));
+        assert_eq!(list_component.selection, vec![0]);
 
         list_component.resize_selection(SelectionDirection::Down);
-        assert_eq!(list_component.selection, Some((0, 1)));
+        assert_eq!(list_component.selection, vec![0, 1]);
         list_component.resize_selection(SelectionDirection::Up);
-        assert_eq!(list_component.selection, Some((0, 0)));
+        assert_eq!(list_component.selection, vec![0]);
+        list_component.resize_selection(SelectionDirection::Down);
+        list_component.resize_selection(SelectionDirection::Down);
+        list_component.resize_selection(SelectionDirection::Down);
+        assert_eq!(list_component.selection, vec![0, 1, 2, 3]);
     }
 }
