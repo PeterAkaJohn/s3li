@@ -13,10 +13,29 @@ use crate::{
 };
 
 #[derive(Debug)]
+pub struct FileToDownload {
+    pub file_name: String,
+    pub key: String,
+}
+
+impl From<String> for FileToDownload {
+    fn from(key: String) -> Self {
+        let file_name = key
+            .split('/')
+            .collect::<Vec<&str>>()
+            .pop()
+            .map(|val| val.to_string());
+        Self {
+            file_name: file_name.expect("file name in download should never be None"),
+            key,
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct Download {
     pub open: bool,
-    pub file_name: Option<String>,
-    pub key: Option<String>,
+    pub files: Vec<FileToDownload>,
     ui_tx: UnboundedSender<Action>,
 }
 
@@ -25,19 +44,12 @@ impl Download {
         Download {
             ui_tx,
             open: false,
-            file_name: None,
-            key: None,
+            files: vec![],
         }
     }
 
-    pub fn init(&mut self, key: String) {
-        let file_name = key
-            .split('/')
-            .collect::<Vec<&str>>()
-            .pop()
-            .map(|val| val.to_string());
-        self.file_name = file_name;
-        self.key = Some(key);
+    pub fn init(&mut self, keys: Vec<String>) {
+        self.files = keys.iter().map(|key| (key.clone()).into()).collect();
         self.open = true;
     }
 }
@@ -61,7 +73,8 @@ impl Component for Download {
         _area: ratatui::prelude::Rect,
         props: Option<ComponentProps>,
     ) {
-        if let Some(file_name) = &self.file_name {
+        let file = self.files.get(0);
+        if let Some(file) = &file {
             let layout = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([Constraint::Fill(1), Constraint::Max(3), Constraint::Fill(1)])
@@ -76,7 +89,7 @@ impl Component for Download {
                 .split(layout[1])[1];
 
             let container = self.with_container("Download file", &props);
-            let input_value = Paragraph::new(file_name.to_string()).block(container);
+            let input_value = Paragraph::new(file.file_name.to_string()).block(container);
             f.render_widget(Clear, center_section);
             f.render_widget(input_value, center_section);
         }
@@ -88,23 +101,24 @@ impl Component for Download {
             }
             crossterm::event::KeyCode::Enter => {
                 // send region to state with ui_tx
-                match (self.key.clone(), self.file_name.clone()) {
-                    (Some(file_key), Some(file_name)) => {
-                        let _ = self.ui_tx.send(Action::DownloadFile(file_key, file_name));
-                    }
-                    _ => panic!("cannot happen must have key and filename"),
+                let file = self.files.first();
+                if let Some(file) = file {
+                    let _ = self.ui_tx.send(Action::DownloadFile(
+                        file.key.clone(),
+                        file.file_name.clone(),
+                    ));
                 }
                 self.open = false;
             }
             crossterm::event::KeyCode::Backspace => {
                 // send region to state with ui_tx
-                if let Some(file_name) = self.file_name.as_mut() {
-                    file_name.pop();
-                };
+                if let Some(file) = self.files.get_mut(0) {
+                    file.file_name.pop();
+                }
             }
             crossterm::event::KeyCode::Char(value) => {
-                if let Some(file_name) = self.file_name.as_mut() {
-                    file_name.push(value)
+                if let Some(file) = self.files.get_mut(0) {
+                    file.file_name.push(value);
                 }
             }
             _ => {}

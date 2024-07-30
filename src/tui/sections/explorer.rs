@@ -213,7 +213,7 @@ impl Component for Explorer {
                 let selected_idx = self.get_list_state_selected();
                 let selected_item = selected_idx.and_then(|idx| self.file_tree.get(idx));
                 if let Some(TreeItem::File(file, _)) = selected_item {
-                    self.download_component.init(file.name.clone());
+                    self.download_component.init(vec![file.name.clone()]);
                 }
             }
 
