@@ -126,8 +126,8 @@ impl WithBlockSelection for Explorer {
 }
 
 impl WithMultiSelection for Explorer {
-    fn get_multi_selection(&self) -> Vec<usize> {
-        self.selection.clone()
+    fn get_multi_selection(&self) -> &Vec<usize> {
+        &self.selection
     }
 
     fn set_multi_selection(&mut self, selection: Vec<usize>) {

@@ -1,5 +1,6 @@
 use anyhow::Result;
 use crossterm::event::KeyEvent;
+use futures::SinkExt;
 use ratatui::{
     layout::{self, Rect},
     style::{self, Stylize},
@@ -146,7 +147,7 @@ pub trait WithBlockSelection: WithList {
 
 pub trait WithMultiSelection: WithBlockSelection {
     fn toggle_selection(&mut self, idx: usize) {
-        let mut current_selection = self.get_multi_selection();
+        let mut current_selection = self.get_multi_selection().clone();
 
         if let Some(existing_position) = current_selection.iter().position(|val| *val == idx) {
             current_selection.remove(existing_position);
@@ -157,7 +158,7 @@ pub trait WithMultiSelection: WithBlockSelection {
         current_selection.sort();
         self.set_multi_selection(current_selection.to_vec());
     }
-    fn get_multi_selection(&self) -> Vec<usize>;
+    fn get_multi_selection(&self) -> &Vec<usize>;
     fn set_multi_selection(&mut self, selection: Vec<usize>);
 }
 
@@ -209,8 +210,8 @@ mod tests {
     }
 
     impl WithMultiSelection for MockList {
-        fn get_multi_selection(&self) -> Vec<usize> {
-            self.multi_selection.clone()
+        fn get_multi_selection(&self) -> &Vec<usize> {
+            &self.multi_selection
         }
 
         fn set_multi_selection(&mut self, selection: Vec<usize>) {
