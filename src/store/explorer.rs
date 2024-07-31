@@ -9,6 +9,12 @@ use tokio::sync::Mutex as TokioMutex;
 
 use crate::providers::AwsClient;
 
+#[derive(Debug, Clone, Default)]
+pub struct FileToDownload {
+    pub file_name: String,
+    pub key: String,
+}
+
 #[derive(Debug, Default, Clone, Eq, Hash, PartialEq)]
 pub struct Folder {
     pub name: String,

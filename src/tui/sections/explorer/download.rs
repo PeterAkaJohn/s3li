@@ -8,17 +8,12 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
     action::Action,
+    store::explorer::FileToDownload,
     tui::components::{
         popup::WithPopup,
         traits::{Component, ComponentProps, WithContainer},
     },
 };
-
-#[derive(Debug)]
-pub struct FileToDownload {
-    pub file_name: String,
-    pub key: String,
-}
 
 impl From<String> for FileToDownload {
     fn from(key: String) -> Self {
@@ -115,13 +110,7 @@ impl Component for Download {
             }
             crossterm::event::KeyCode::Enter => {
                 // send region to state with ui_tx
-                let file = self.files.first();
-                if let Some(file) = file {
-                    let _ = self.ui_tx.send(Action::DownloadFile(
-                        file.key.clone(),
-                        file.file_name.clone(),
-                    ));
-                }
+                let _ = self.ui_tx.send(Action::DownloadFile(self.files.clone()));
                 self.open = false;
             }
             crossterm::event::KeyCode::Tab => {
