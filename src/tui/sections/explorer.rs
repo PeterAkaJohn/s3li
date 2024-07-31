@@ -210,13 +210,37 @@ impl Component for Explorer {
                 }
             }
             crossterm::event::KeyCode::Char('d') => {
-                let selected_idx = self.get_list_state_selected();
-                let selected_item = selected_idx.and_then(|idx| self.file_tree.get(idx));
-                if let Some(TreeItem::File(file, _)) = selected_item {
-                    self.download_component.init(file.name.clone());
-                }
+                let files = match self.mode {
+                    ListMode::Normal => {
+                        let selected_idx = self.get_list_state_selected();
+                        let selected_item = selected_idx.and_then(|idx| self.file_tree.get(idx));
+                        if let Some(TreeItem::File(file, _)) = selected_item {
+                            vec![file.name.clone()]
+                        } else {
+                            vec![]
+                        }
+                    }
+                    _ => {
+                        let files_idx = &self.selection;
+                        self.file_tree
+                            .iter()
+                            .enumerate()
+                            .filter_map(|(idx, tree_item)| {
+                                if files_idx.contains(&idx) {
+                                    Some(tree_item)
+                                } else {
+                                    None
+                                }
+                            })
+                            .map(|tree_item| match tree_item {
+                                TreeItem::File(file, _) => file.name.clone(),
+                                TreeItem::Folder(_, _) => todo!(),
+                            })
+                            .collect::<Vec<_>>()
+                    }
+                };
+                self.download_component.init(files);
             }
-
             _ => {}
         };
     }

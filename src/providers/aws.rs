@@ -24,7 +24,7 @@ impl AwsClient {
         let client = Client::new(&config);
         Self {
             account: "default".to_string(),
-            region: "us-east-1".to_string(),
+            region: "eu-central-1".to_string(),
             credentials: Credentials::default(),
             client,
         }

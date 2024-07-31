@@ -1,6 +1,9 @@
 use crate::{
     providers::AuthProperties,
-    store::{explorer::TreeItem, state::DashboardComponents},
+    store::{
+        explorer::{FileToDownload, TreeItem},
+        state::DashboardComponents,
+    },
 };
 
 #[derive(Debug, Clone)]
@@ -12,7 +15,7 @@ pub enum Action {
     SetSource(usize),
     SetAccount(usize),
     SetExplorerFolder(TreeItem),
-    DownloadFile(String, String),
+    DownloadFile(Vec<FileToDownload>),
     ChangeRegion(String),
     RefreshCredentials,
     EditCredentials(String, AuthProperties),

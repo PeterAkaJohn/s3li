@@ -15,7 +15,7 @@ use crate::{
 use super::{
     accounts::Accounts,
     action_manager::ActionManager,
-    explorer::Explorer,
+    explorer::{Explorer, FileToDownload},
     notifications::Notifications,
     sources::{buckets::Buckets, traits::WithSources, Sources},
 };
@@ -124,18 +124,22 @@ impl State {
                     .notifications
                     .push("Credentials updated".to_string(), false);
             }
-            Action::DownloadFile(key, file_name) => {
-                if let Err(e) = self.app_state.sources.download_file(&key, &file_name).await {
-                    let _ = LOGGER.info(&format!("error downloading file {key}"));
-                    let _ = LOGGER.info(&format!("{:?}", e));
-                    self.app_state
-                        .notifications
-                        .push(format!("Failed to download file {key}"), true);
-                } else {
-                    self.app_state.notifications.push(
-                        format!("File {key} downloaded to current location with name {file_name}"),
-                        false,
-                    );
+            Action::DownloadFile(files_to_download) => {
+                for FileToDownload { file_name, key } in files_to_download {
+                    if let Err(e) = self.app_state.sources.download_file(&key, &file_name).await {
+                        let _ = LOGGER.info(&format!("error downloading file {key}"));
+                        let _ = LOGGER.info(&format!("{:?}", e));
+                        self.app_state
+                            .notifications
+                            .push(format!("Failed to download file {key}"), true);
+                    } else {
+                        self.app_state.notifications.push(
+                            format!(
+                                "File {key} downloaded to current location with name {file_name}"
+                            ),
+                            false,
+                        );
+                    }
                 }
             }
             Action::CycleSelectedComponent => match self.app_state.selected_component {
