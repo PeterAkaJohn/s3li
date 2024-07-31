@@ -1,6 +1,8 @@
+use std::ops::Add;
+
 use ratatui::{
     layout::{Constraint, Direction, Layout},
-    widgets::{Clear, Paragraph},
+    widgets::{block::Title, Clear, Paragraph},
 };
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -37,6 +39,7 @@ pub struct Download {
     pub open: bool,
     pub files: Vec<FileToDownload>,
     ui_tx: UnboundedSender<Action>,
+    current_file_idx: usize,
 }
 
 impl Download {
@@ -45,6 +48,7 @@ impl Download {
             ui_tx,
             open: false,
             files: vec![],
+            current_file_idx: 0,
         }
     }
 
@@ -73,8 +77,19 @@ impl Component for Download {
         _area: ratatui::prelude::Rect,
         props: Option<ComponentProps>,
     ) {
-        let file = self.files.get(0);
-        if let Some(file) = &file {
+        let mut container = self.with_container("Download file", &props);
+        container = container.title(
+            Title::from(format!(
+                "{} of {}",
+                self.current_file_idx + 1,
+                self.files.len()
+            ))
+            .position(ratatui::widgets::block::Position::Bottom)
+            .alignment(ratatui::layout::Alignment::Right),
+        );
+
+        let current_file = self.files.get(self.current_file_idx);
+        if let Some(file) = &current_file {
             let layout = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([Constraint::Fill(1), Constraint::Max(3), Constraint::Fill(1)])
@@ -88,7 +103,6 @@ impl Component for Download {
                 ])
                 .split(layout[1])[1];
 
-            let container = self.with_container("Download file", &props);
             let input_value = Paragraph::new(file.file_name.to_string()).block(container);
             f.render_widget(Clear, center_section);
             f.render_widget(input_value, center_section);
@@ -110,14 +124,21 @@ impl Component for Download {
                 }
                 self.open = false;
             }
+            crossterm::event::KeyCode::Tab => {
+                self.current_file_idx = if self.current_file_idx == self.files.len() - 1 {
+                    0
+                } else {
+                    self.current_file_idx.add(1)
+                };
+            }
             crossterm::event::KeyCode::Backspace => {
                 // send region to state with ui_tx
-                if let Some(file) = self.files.get_mut(0) {
+                if let Some(file) = self.files.get_mut(self.current_file_idx) {
                     file.file_name.pop();
                 }
             }
             crossterm::event::KeyCode::Char(value) => {
-                if let Some(file) = self.files.get_mut(0) {
+                if let Some(file) = self.files.get_mut(self.current_file_idx) {
                     file.file_name.push(value);
                 }
             }
