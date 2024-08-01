@@ -4,13 +4,13 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Paragraph, Widget, Wrap},
 };
 
-pub struct Input {
+pub struct InputBlock {
     value: String,
     title: String,
     is_selected: bool,
 }
 
-impl Input {
+impl InputBlock {
     pub fn new(value: String, title: String, is_selected: bool) -> Self {
         Self {
             value,
@@ -20,7 +20,7 @@ impl Input {
     }
 }
 
-impl Widget for Input {
+impl Widget for InputBlock {
     fn render(self, area: Rect, buf: &mut ratatui::prelude::Buffer)
     where
         Self: Sized,

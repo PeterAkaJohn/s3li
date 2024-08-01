@@ -4,7 +4,7 @@ use ratatui::{
 };
 
 use crate::tui::components::{
-    input::Input,
+    input::InputBlock,
     popup::WithPopup,
     traits::{Component, ComponentProps, WithContainer},
 };
@@ -106,7 +106,7 @@ impl Component for AddProperty {
             .margin(1)
             .split(vertical[1]);
 
-        let input_name = Input::new(
+        let input_name = InputBlock::new(
             self.name.clone(),
             "Name".to_string(),
             matches!(self.selected, Selected::Name),
@@ -114,7 +114,7 @@ impl Component for AddProperty {
 
         f.render_widget(input_name, input_container[0]);
 
-        let input_value = Input::new(
+        let input_value = InputBlock::new(
             self.value.clone(),
             "Value".to_string(),
             matches!(self.selected, Selected::Value),

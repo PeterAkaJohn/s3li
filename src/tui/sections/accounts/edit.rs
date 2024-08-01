@@ -12,7 +12,7 @@ use crate::{
     action::Action,
     logger::LOGGER,
     tui::components::{
-        input::Input,
+        input::InputBlock,
         popup::WithPopup,
         traits::{Component, ComponentProps, WithContainer},
     },
@@ -191,7 +191,8 @@ impl Component for EditAccount {
                 .for_each(|(idx, ((key, value), property_area))| {
                     if let Some(value) = value {
                         let is_selected = idx == self.selected_idx;
-                        let input = Input::new(value.to_string(), key.to_string(), is_selected);
+                        let input =
+                            InputBlock::new(value.to_string(), key.to_string(), is_selected);
                         f.render_widget(input, *property_area);
                     }
                 });

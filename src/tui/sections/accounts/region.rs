@@ -7,7 +7,7 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::{
     action::Action,
     tui::components::{
-        input::Input,
+        input::InputBlock,
         popup::WithPopup,
         traits::{Component, ComponentProps, WithContainer},
     },
@@ -63,7 +63,7 @@ impl Component for Region {
             ])
             .split(layout[1])[1];
 
-        let input = Input::new(self.new_region.to_string(), "Region".to_string(), true);
+        let input = InputBlock::new(self.new_region.to_string(), "Region".to_string(), true);
         f.render_widget(Clear, center_section);
         f.render_widget(input, center_section);
     }
