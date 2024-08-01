@@ -4,6 +4,10 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Paragraph, Widget, Wrap},
 };
 
+trait WithCursor: Widget {
+    fn with_cursor(&self, area: Rect, buf: &mut ratatui::prelude::Buffer);
+}
+
 pub struct InputBlock {
     value: String,
     title: String,
@@ -45,9 +49,15 @@ impl Widget for InputBlock {
                     .border_type(BorderType::Rounded),
             );
         input_value.render(input_sections[0], buf);
+        self.with_cursor(input_sections[0], buf);
+    }
+}
+
+impl WithCursor for InputBlock {
+    fn with_cursor(&self, section: Rect, buf: &mut ratatui::prelude::Buffer) {
         if self.is_selected {
-            let starting_y = input_sections[0].y;
-            let width = input_sections[0].width - 2; // need to remove 2 because of borders?
+            let starting_y = section.y;
+            let width = section.width - 2; // need to remove 2 because of borders?
             let value_len = self.value.chars().count();
             // add 1 to increase offset when len equals width
             let offset = (value_len as u16 + 1).div_ceil(width);
@@ -55,7 +65,7 @@ impl Widget for InputBlock {
             let x = value_len as u16 % width;
             const WIDTH: u16 = 1;
             let last_position = Position {
-                x: input_sections[0].x + 1 + x,
+                x: section.x + 1 + x,
                 y,
             };
             let size = Size::new(WIDTH, 1);
@@ -101,9 +111,15 @@ impl Widget for Input {
         let input_value =
             Paragraph::new(self.value.to_string()).scroll((0, horizonta_scroll as u16));
         input_value.render(input_sections[0], buf);
+        self.with_cursor(input_sections[0], buf);
+    }
+}
+
+impl WithCursor for Input {
+    fn with_cursor(&self, section: Rect, buf: &mut ratatui::prelude::Buffer) {
         if self.is_selected {
-            let starting_y = input_sections[0].y;
-            let width = input_sections[0].width - 2; // need to remove 2 because of borders?
+            let starting_y = section.y;
+            let width = section.width - 2; // need to remove 2 because of borders?
             let value_len = self.value.chars().count();
             // add 1 to increase offset when len equals width
             let y = starting_y;
@@ -114,7 +130,7 @@ impl Widget for Input {
             };
             const WIDTH: u16 = 1;
             let last_position = Position {
-                x: input_sections[0].x + x,
+                x: section.x + x,
                 y,
             };
             let size = Size::new(WIDTH, 1);
