@@ -4,8 +4,33 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Paragraph, Widget, Wrap},
 };
 
-trait WithCursor: Widget {
-    fn with_cursor(&self, area: Rect, buf: &mut ratatui::prelude::Buffer);
+trait WithCursor {
+    fn get_inner_area(&self, section: &Rect) -> u16 {
+        section.width - 2
+    }
+    fn get_x(&self, section: &Rect) -> u16;
+    fn get_y(&self, section: &Rect) -> u16;
+    fn is_visible(&self) -> bool;
+    fn value_length(&self) -> u16;
+    fn with_cursor(&self, section: Rect, buf: &mut ratatui::prelude::Buffer) {
+        if self.is_visible() {
+            const WIDTH: u16 = 1;
+            let last_position = Position {
+                x: self.get_x(&section),
+                y: self.get_y(&section),
+            };
+            let size = Size::new(WIDTH, 1);
+            let area = Rect::from((last_position, size));
+            fill(
+                area,
+                buf,
+                "█",
+                Style::default()
+                    .fg(Color::White)
+                    .add_modifier(Modifier::RAPID_BLINK),
+            );
+        }
+    }
 }
 
 pub struct InputBlock {
@@ -54,31 +79,26 @@ impl Widget for InputBlock {
 }
 
 impl WithCursor for InputBlock {
-    fn with_cursor(&self, section: Rect, buf: &mut ratatui::prelude::Buffer) {
-        if self.is_selected {
-            let starting_y = section.y;
-            let width = section.width - 2; // need to remove 2 because of borders?
-            let value_len = self.value.chars().count();
-            // add 1 to increase offset when len equals width
-            let offset = (value_len as u16 + 1).div_ceil(width);
-            let y = starting_y + offset;
-            let x = value_len as u16 % width;
-            const WIDTH: u16 = 1;
-            let last_position = Position {
-                x: section.x + 1 + x,
-                y,
-            };
-            let size = Size::new(WIDTH, 1);
-            let area = Rect::from((last_position, size));
-            fill(
-                area,
-                buf,
-                "█",
-                Style::default()
-                    .fg(Color::White)
-                    .add_modifier(Modifier::RAPID_BLINK),
-            );
-        }
+    fn get_x(&self, section: &Rect) -> u16 {
+        let width = self.get_inner_area(section);
+        let value_len = self.value_length();
+        section.x + 1 + (value_len % width)
+    }
+
+    fn get_y(&self, section: &Rect) -> u16 {
+        let starting_y = section.y;
+        let width = self.get_inner_area(section);
+        let value_len = self.value_length();
+        let offset = (value_len + 1).div_ceil(width);
+        starting_y + offset
+    }
+
+    fn is_visible(&self) -> bool {
+        self.is_selected
+    }
+
+    fn value_length(&self) -> u16 {
+        self.value.chars().count() as u16
     }
 }
 
@@ -116,34 +136,27 @@ impl Widget for Input {
 }
 
 impl WithCursor for Input {
-    fn with_cursor(&self, section: Rect, buf: &mut ratatui::prelude::Buffer) {
-        if self.is_selected {
-            let starting_y = section.y;
-            let width = section.width - 2; // need to remove 2 because of borders?
-            let value_len = self.value.chars().count();
-            // add 1 to increase offset when len equals width
-            let y = starting_y;
-            let x = if (value_len as u16) < width - 1 {
-                value_len as u16 % width
-            } else {
-                width - 1
-            };
-            const WIDTH: u16 = 1;
-            let last_position = Position {
-                x: section.x + x,
-                y,
-            };
-            let size = Size::new(WIDTH, 1);
-            let area = Rect::from((last_position, size));
-            fill(
-                area,
-                buf,
-                "█",
-                Style::default()
-                    .fg(Color::White)
-                    .add_modifier(Modifier::RAPID_BLINK),
-            );
-        }
+    fn get_x(&self, section: &Rect) -> u16 {
+        let width = self.get_inner_area(section);
+        let value_len = self.value_length();
+        let x = if value_len < width - 1 {
+            value_len % width
+        } else {
+            width - 1
+        };
+        x + section.x
+    }
+
+    fn get_y(&self, section: &Rect) -> u16 {
+        section.y
+    }
+
+    fn is_visible(&self) -> bool {
+        self.is_selected
+    }
+
+    fn value_length(&self) -> u16 {
+        self.value.chars().count() as u16
     }
 }
 
