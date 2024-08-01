@@ -1,7 +1,7 @@
 use std::ops::Add;
 
 use ratatui::{
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Direction, Layout, Margin},
     widgets::{block::Title, Clear, Paragraph},
 };
 use tokio::sync::mpsc::UnboundedSender;
@@ -10,6 +10,7 @@ use crate::{
     action::Action,
     store::explorer::FileToDownload,
     tui::components::{
+        input::{Input, InputBlock},
         popup::WithPopup,
         traits::{Component, ComponentProps, WithContainer},
     },
@@ -93,14 +94,15 @@ impl Component for Download {
                 .direction(Direction::Horizontal)
                 .constraints([
                     Constraint::Fill(2),
-                    Constraint::Fill(1),
+                    Constraint::Fill(2),
                     Constraint::Fill(2),
                 ])
                 .split(layout[1])[1];
 
-            let input_value = Paragraph::new(file.file_name.to_string()).block(container);
+            let input = Input::new(file.file_name.to_string(), true);
             f.render_widget(Clear, center_section);
-            f.render_widget(input_value, center_section);
+            f.render_widget(container, center_section);
+            f.render_widget(input, center_section.inner(&Margin::new(1, 1)));
         }
     }
     fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
