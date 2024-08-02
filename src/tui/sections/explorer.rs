@@ -214,8 +214,8 @@ impl Component for Explorer {
                     ListMode::Normal => {
                         let selected_idx = self.get_list_state_selected();
                         let selected_item = selected_idx.and_then(|idx| self.file_tree.get(idx));
-                        if let Some(TreeItem::File(file, _)) = selected_item {
-                            vec![file.name.clone()]
+                        if let Some(tree_item) = selected_item {
+                            vec![tree_item.clone()]
                         } else {
                             vec![]
                         }
@@ -227,14 +227,10 @@ impl Component for Explorer {
                             .enumerate()
                             .filter_map(|(idx, tree_item)| {
                                 if files_idx.contains(&idx) {
-                                    Some(tree_item)
+                                    Some(tree_item.clone())
                                 } else {
                                     None
                                 }
-                            })
-                            .map(|tree_item| match tree_item {
-                                TreeItem::File(file, _) => file.name.clone(),
-                                TreeItem::Folder(_, _) => todo!(),
                             })
                             .collect::<Vec<_>>()
                     }

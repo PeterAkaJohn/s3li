@@ -2,38 +2,24 @@ use std::ops::Add;
 
 use ratatui::{
     layout::{Constraint, Direction, Layout, Margin},
-    widgets::{block::Title, Clear, Paragraph},
+    widgets::{block::Title, Clear},
 };
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
     action::Action,
-    store::explorer::FileToDownload,
+    store::explorer::TreeItem,
     tui::components::{
-        input::{Input, InputBlock},
+        input::Input,
         popup::WithPopup,
         traits::{Component, ComponentProps, WithContainer},
     },
 };
 
-impl From<String> for FileToDownload {
-    fn from(key: String) -> Self {
-        let file_name = key
-            .split('/')
-            .collect::<Vec<&str>>()
-            .pop()
-            .map(|val| val.to_string());
-        Self {
-            file_name: file_name.expect("file name in download should never be None"),
-            key,
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct Download {
     pub open: bool,
-    pub files: Vec<FileToDownload>,
+    pub items: Vec<TreeItem>,
     ui_tx: UnboundedSender<Action>,
     current_file_idx: usize,
 }
@@ -43,13 +29,13 @@ impl Download {
         Download {
             ui_tx,
             open: false,
-            files: vec![],
+            items: vec![],
             current_file_idx: 0,
         }
     }
 
-    pub fn init(&mut self, keys: Vec<String>) {
-        self.files = keys.iter().map(|key| (key.clone()).into()).collect();
+    pub fn init(&mut self, tree_items: Vec<TreeItem>) {
+        self.items = tree_items;
         self.open = true;
     }
 }
@@ -78,14 +64,14 @@ impl Component for Download {
             Title::from(format!(
                 "{} of {}",
                 self.current_file_idx + 1,
-                self.files.len()
+                self.items.len()
             ))
             .position(ratatui::widgets::block::Position::Bottom)
             .alignment(ratatui::layout::Alignment::Right),
         );
 
-        let current_file = self.files.get(self.current_file_idx);
-        if let Some(file) = &current_file {
+        let current_item = self.items.get(self.current_file_idx);
+        if let Some(item) = current_item {
             let layout = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([Constraint::Fill(1), Constraint::Max(3), Constraint::Fill(1)])
@@ -99,7 +85,7 @@ impl Component for Download {
                 ])
                 .split(layout[1])[1];
 
-            let input = Input::new(file.file_name.to_string(), true);
+            let input = Input::new(item.name().to_string(), true);
             f.render_widget(Clear, center_section);
             f.render_widget(container, center_section);
             f.render_widget(input, center_section.inner(&Margin::new(1, 1)));
@@ -112,11 +98,11 @@ impl Component for Download {
             }
             crossterm::event::KeyCode::Enter => {
                 // send region to state with ui_tx
-                let _ = self.ui_tx.send(Action::DownloadFile(self.files.clone()));
+                let _ = self.ui_tx.send(Action::DownloadFile(self.items.clone()));
                 self.open = false;
             }
             crossterm::event::KeyCode::Tab => {
-                self.current_file_idx = if self.current_file_idx == self.files.len() - 1 {
+                self.current_file_idx = if self.current_file_idx == self.items.len() - 1 {
                     0
                 } else {
                     self.current_file_idx.add(1)
@@ -124,13 +110,13 @@ impl Component for Download {
             }
             crossterm::event::KeyCode::Backspace => {
                 // send region to state with ui_tx
-                if let Some(file) = self.files.get_mut(self.current_file_idx) {
-                    file.file_name.pop();
+                if let Some(item) = self.items.get_mut(self.current_file_idx) {
+                    item.pop_name_char();
                 }
             }
             crossterm::event::KeyCode::Char(value) => {
-                if let Some(file) = self.files.get_mut(self.current_file_idx) {
-                    file.file_name.push(value);
+                if let Some(item) = self.items.get_mut(self.current_file_idx) {
+                    item.push_name_char(value);
                 }
             }
             _ => {}

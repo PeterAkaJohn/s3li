@@ -15,7 +15,7 @@ use crate::{
 use super::{
     accounts::Accounts,
     action_manager::ActionManager,
-    explorer::{Explorer, FileToDownload},
+    explorer::{Explorer, File, TreeItem},
     notifications::Notifications,
     sources::{buckets::Buckets, traits::WithSources, Sources},
 };
@@ -124,21 +124,38 @@ impl State {
                     .notifications
                     .push("Credentials updated".to_string(), false);
             }
-            Action::DownloadFile(files_to_download) => {
-                for FileToDownload { file_name, key } in files_to_download {
-                    if let Err(e) = self.app_state.sources.download_file(&key, &file_name).await {
-                        let _ = LOGGER.info(&format!("error downloading file {key}"));
-                        let _ = LOGGER.info(&format!("{:?}", e));
-                        self.app_state
-                            .notifications
-                            .push(format!("Failed to download file {key}"), true);
-                    } else {
-                        self.app_state.notifications.push(
-                            format!(
-                                "File {key} downloaded to current location with name {file_name}"
-                            ),
-                            false,
-                        );
+            Action::DownloadFile(items_to_download) => {
+                for tree_item in items_to_download {
+                    match tree_item {
+                        TreeItem::Folder(_, _) => todo!(),
+                        TreeItem::File(
+                            File {
+                                name,
+                                relative_name,
+                                ..
+                            },
+                            _,
+                        ) => {
+                            if let Err(e) = self
+                                .app_state
+                                .sources
+                                .download_file(&name, &relative_name)
+                                .await
+                            {
+                                let _ = LOGGER.info(&format!("error downloading file {name}"));
+                                let _ = LOGGER.info(&format!("{:?}", e));
+                                self.app_state
+                                    .notifications
+                                    .push(format!("Failed to download file {name}"), true);
+                            } else {
+                                self.app_state.notifications.push(
+                                    format!(
+                                    "File {name} downloaded to current location with name {relative_name}"
+                                ),
+                                    false,
+                                );
+                            }
+                        }
                     }
                 }
             }
