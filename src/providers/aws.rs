@@ -1,12 +1,18 @@
 mod credentials;
 
 use core::panic;
-use std::{collections::HashMap, fs::OpenOptions, io::Write};
+use std::{
+    collections::HashMap,
+    fs::{self, OpenOptions},
+    io::Write,
+};
 
 use anyhow::Result;
 use aws_config::{profile::ProfileFileCredentialsProvider, BehaviorVersion, Region};
 use aws_sdk_s3::Client;
 pub use credentials::{AuthProperties, Credentials};
+
+use crate::logger::LOGGER;
 
 #[derive(Debug, Clone)]
 pub struct AwsClient {
@@ -105,6 +111,108 @@ impl AwsClient {
         destination_file.write_all(&bytes)?;
         Ok(true)
     }
+    pub async fn download_file_string(
+        &self,
+        bucket: String,
+        file_key: String,
+        file_name: String,
+    ) -> Result<bool> {
+        let parent_folder_to_create = file_name
+            .split('/')
+            .collect::<Vec<_>>()
+            .into_iter()
+            .rev()
+            .skip(1)
+            .rev()
+            .collect::<Vec<_>>();
+
+        let parent_folder_to_create = parent_folder_to_create.join("/");
+
+        let _ = fs::create_dir_all(parent_folder_to_create);
+
+        let mut destination_file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(file_name)?;
+
+        let object = self
+            .client
+            .get_object()
+            .bucket(bucket)
+            .key(file_key)
+            .send()
+            .await?;
+        let bytes = object.body.collect().await?.into_bytes();
+        destination_file.write_all(&bytes)?;
+        Ok(true)
+    }
+
+    pub async fn download_folder(
+        &self,
+        bucket: &str,
+        folder_key: &str,
+        folder_name: &str,
+    ) -> Result<bool> {
+        let mut response = self
+            .client
+            .list_objects_v2()
+            .bucket(bucket)
+            .prefix(folder_key)
+            .into_paginator()
+            .send();
+        let mut files_to_download: Vec<String> = vec![];
+        let chars_to_remove = folder_key.chars().count();
+
+        while let Some(result) = response.next().await {
+            match result {
+                Ok(objects) => {
+                    let mut files = objects
+                        .contents()
+                        .iter()
+                        .map(|val| val.key().unwrap_or("Unknown").to_owned())
+                        .collect::<Vec<_>>();
+                    files_to_download.append(&mut files);
+                }
+                Err(_) => break,
+            }
+        }
+
+        let files_to_download = files_to_download
+            .iter()
+            .map(|file| {
+                let new_file_name = file.chars().skip(chars_to_remove).collect::<String>();
+
+                (file.clone(), format!("{folder_name}/{new_file_name}"))
+            })
+            .collect::<Vec<(String, String)>>();
+
+        LOGGER.info(&format!("files to download {:#?}", files_to_download));
+
+        let mut operations: Vec<Result<bool>> = vec![];
+        for (file_to_download, file_name) in files_to_download {
+            operations.push(
+                self.download_file_string(
+                    bucket.to_string(),
+                    file_to_download.to_string(),
+                    file_name.to_string(),
+                )
+                .await,
+            );
+        }
+
+        // let mut handles = Vec::with_capacity(operations.len());
+        // for op in operations {
+        //     handles.push(tokio::spawn(op));
+        // }
+        // let mut results = Vec::with_capacity(handles.len());
+        //
+        // for handle in handles {
+        //     results.push(handle.await.unwrap());
+        // }
+
+        Ok(true)
+    }
 
     pub async fn list_objects(
         &self,
@@ -118,7 +226,6 @@ impl AwsClient {
             .bucket(bucket)
             .prefix(prefix)
             .delimiter("/")
-            .max_keys(100)
             .into_paginator()
             .send();
         let mut result_files: Vec<String> = vec![];

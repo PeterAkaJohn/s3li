@@ -39,4 +39,9 @@ impl WithSources for Sources {
             Sources::Buckets(buckets) => buckets.download_file(key, file_name).await,
         }
     }
+    async fn download_folder(&self, key: &str, new_folder_name: &str) -> anyhow::Result<bool> {
+        match self {
+            Sources::Buckets(buckets) => buckets.download_folder(key, new_folder_name).await,
+        }
+    }
 }

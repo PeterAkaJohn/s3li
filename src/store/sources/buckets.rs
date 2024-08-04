@@ -60,4 +60,17 @@ impl WithSources for Buckets {
             Err(anyhow!("selected bucket was empty!!!"))
         }
     }
+
+    async fn download_folder(&self, key: &str, new_folder_name: &str) -> Result<bool> {
+        let selected_bucket = self.get_active_source();
+        if let Some(bucket) = selected_bucket {
+            self.client
+                .lock()
+                .await
+                .download_folder(bucket, key, new_folder_name)
+                .await
+        } else {
+            Err(anyhow!("selected bucket was empty!!!"))
+        }
+    }
 }

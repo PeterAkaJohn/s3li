@@ -15,7 +15,7 @@ use crate::{
 use super::{
     accounts::Accounts,
     action_manager::ActionManager,
-    explorer::{Explorer, File, TreeItem},
+    explorer::{Explorer, File, Folder, TreeItem},
     notifications::Notifications,
     sources::{buckets::Buckets, traits::WithSources, Sources},
 };
@@ -127,7 +127,35 @@ impl State {
             Action::DownloadFile(items_to_download) => {
                 for tree_item in items_to_download {
                     match tree_item {
-                        TreeItem::Folder(_, _) => todo!(),
+                        TreeItem::Folder(
+                            Folder {
+                                name,
+                                relative_name,
+                                ..
+                            },
+                            _,
+                        ) => {
+                            let _ = LOGGER.info(&format!("{:?}", name));
+                            if let Err(e) = self
+                                .app_state
+                                .sources
+                                .download_folder(&name, &relative_name)
+                                .await
+                            {
+                                let _ = LOGGER.info(&format!("error downloading file {name}"));
+                                let _ = LOGGER.info(&format!("{:?}", e));
+                                self.app_state
+                                    .notifications
+                                    .push(format!("Failed to download file {name}"), true);
+                            } else {
+                                self.app_state.notifications.push(
+                                    format!(
+                                    "File {name} downloaded to current location with name {relative_name}"
+                                ),
+                                    false,
+                                );
+                            }
+                        }
                         TreeItem::File(
                             File {
                                 name,
