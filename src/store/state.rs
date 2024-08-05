@@ -17,7 +17,11 @@ use super::{
     action_manager::ActionManager,
     explorer::{Explorer, File, Folder, TreeItem},
     notifications::Notifications,
-    sources::{buckets::Buckets, traits::WithSources, Sources},
+    sources::{
+        buckets::Buckets,
+        traits::{WithDownload, WithSources},
+        Sources,
+    },
 };
 
 #[derive(Default, Debug, Clone)]

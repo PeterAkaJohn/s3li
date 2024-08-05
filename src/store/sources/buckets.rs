@@ -5,7 +5,7 @@ use tokio::sync::Mutex;
 
 use crate::providers::AwsClient;
 
-use super::traits::WithSources;
+use super::traits::{WithDownload, WithSources};
 
 #[derive(Debug, Clone)]
 pub struct Buckets {
@@ -47,7 +47,9 @@ impl WithSources for Buckets {
         };
         self.available_sources = sources;
     }
+}
 
+impl WithDownload for Buckets {
     async fn download_file(&self, key: &str, file_name: &str) -> Result<bool> {
         let selected_bucket = self.get_active_source();
         if let Some(bucket) = selected_bucket {

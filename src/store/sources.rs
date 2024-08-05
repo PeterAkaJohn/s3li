@@ -1,4 +1,5 @@
 use buckets::Buckets;
+use traits::WithDownload;
 pub use traits::WithSources;
 
 pub mod buckets;
@@ -33,7 +34,9 @@ impl WithSources for Sources {
             Sources::Buckets(buckets) => buckets.update_available_sources().await,
         };
     }
+}
 
+impl WithDownload for Sources {
     async fn download_file(&self, key: &str, file_name: &str) -> anyhow::Result<bool> {
         match self {
             Sources::Buckets(buckets) => buckets.download_file(key, file_name).await,
