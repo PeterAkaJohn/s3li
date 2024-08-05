@@ -6,4 +6,5 @@ pub trait WithSources {
     fn get_available_sources(&self) -> &Vec<String>;
     async fn update_available_sources(&mut self);
     async fn download_file(&self, key: &str, file_name: &str) -> Result<bool>;
+    async fn download_folder(&self, key: &str, new_folder_name: &str) -> Result<bool>;
 }
