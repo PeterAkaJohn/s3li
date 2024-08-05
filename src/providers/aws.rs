@@ -227,7 +227,7 @@ impl AwsClient {
         Ok(true)
     }
 
-    pub async fn list_objects(
+    pub async fn list_objects_one_level(
         &self,
         bucket: &str,
         current_folder: Option<&str>,
