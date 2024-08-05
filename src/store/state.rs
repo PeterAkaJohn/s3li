@@ -128,7 +128,7 @@ impl State {
                     .notifications
                     .push("Credentials updated".to_string(), false);
             }
-            Action::DownloadFile(items_to_download) => {
+            Action::Download(items_to_download) => {
                 for tree_item in items_to_download {
                     match tree_item {
                         TreeItem::Folder(
