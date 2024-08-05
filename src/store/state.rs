@@ -142,15 +142,15 @@ impl State {
                                 .download_folder(&name, &relative_name)
                                 .await
                             {
-                                let _ = LOGGER.info(&format!("error downloading file {name}"));
+                                let _ = LOGGER.info(&format!("error downloading Folder {name}"));
                                 let _ = LOGGER.info(&format!("{:?}", e));
                                 self.app_state
                                     .notifications
-                                    .push(format!("Failed to download file {name}"), true);
+                                    .push(format!("Failed to download Folder {name}"), true);
                             } else {
                                 self.app_state.notifications.push(
                                     format!(
-                                    "File {name} downloaded to current location with name {relative_name}"
+                                    "Folder {name} downloaded to current location with name {relative_name}"
                                 ),
                                     false,
                                 );

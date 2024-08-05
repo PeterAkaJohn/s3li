@@ -5,6 +5,7 @@ use std::{
     collections::HashMap,
     fs::{self, OpenOptions},
     io::Write,
+    sync::Arc,
 };
 
 use anyhow::Result;
@@ -94,6 +95,16 @@ impl AwsClient {
         file_key: &str,
         file_name: &str,
     ) -> Result<bool> {
+        let parent_folder_to_create = file_name
+            .split('/')
+            .collect::<Vec<_>>()
+            .into_iter()
+            .rev()
+            .skip(1)
+            .rev()
+            .collect::<Vec<_>>();
+        let parent_folder_to_create = parent_folder_to_create.join("/");
+        let _ = fs::create_dir_all(parent_folder_to_create);
         let mut destination_file = OpenOptions::new()
             .write(true)
             .create(true)
@@ -154,6 +165,7 @@ impl AwsClient {
         folder_key: &str,
         folder_name: &str,
     ) -> Result<bool> {
+        // download should be defined on files and folders not like this, doesn't feel right
         let mut response = self
             .client
             .list_objects_v2()
@@ -183,34 +195,35 @@ impl AwsClient {
             .map(|file| {
                 let new_file_name = file.chars().skip(chars_to_remove).collect::<String>();
 
-                (file.clone(), format!("{folder_name}/{new_file_name}"))
-            })
-            .collect::<Vec<(String, String)>>();
-
-        LOGGER.info(&format!("files to download {:#?}", files_to_download));
-
-        let mut operations: Vec<Result<bool>> = vec![];
-        for (file_to_download, file_name) in files_to_download {
-            operations.push(
-                self.download_file_string(
+                (
+                    Arc::new(self.clone()),
                     bucket.to_string(),
-                    file_to_download.to_string(),
-                    file_name.to_string(),
+                    file.clone(),
+                    format!("{folder_name}/{new_file_name}"),
                 )
-                .await,
-            );
+            })
+            .collect::<Vec<(Arc<AwsClient>, String, String, String)>>();
+
+        let _ = LOGGER.info(&format!("files to download {:#?}", files_to_download));
+
+        let operations = files_to_download
+            .into_iter()
+            .map(|item| {
+                tokio::task::spawn(async move {
+                    item.0
+                        .clone()
+                        .download_file_string(item.1, item.2, item.3)
+                        .await
+                })
+            })
+            .collect::<Vec<_>>();
+        let mut results = Vec::with_capacity(operations.len());
+        for op in operations {
+            results.push(op.await.unwrap());
         }
 
-        // let mut handles = Vec::with_capacity(operations.len());
-        // for op in operations {
-        //     handles.push(tokio::spawn(op));
-        // }
-        // let mut results = Vec::with_capacity(handles.len());
-        //
-        // for handle in handles {
-        //     results.push(handle.await.unwrap());
-        // }
-
+        let actual_results: Result<Vec<bool>> = results.into_iter().collect();
+        actual_results?;
         Ok(true)
     }
 
