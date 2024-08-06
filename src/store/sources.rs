@@ -1,9 +1,13 @@
-use buckets::Buckets;
-use traits::WithDownload;
+use anyhow::Result;
+use buckets::{entities::BucketItem, Buckets};
 pub use traits::WithSources;
+use traits::{Downloadable, WithDownload};
+
+use super::explorer::TreeItem;
 
 pub mod buckets;
 pub mod traits;
+mod types;
 
 #[derive(Debug, Clone)]
 pub enum Sources {
@@ -36,15 +40,10 @@ impl WithSources for Sources {
     }
 }
 
-impl WithDownload for Sources {
-    async fn download_file(&self, key: &str, file_name: &str) -> anyhow::Result<bool> {
+impl Sources {
+    pub async fn download(&self, items: Vec<impl Downloadable>) -> Result<Vec<bool>> {
         match self {
-            Sources::Buckets(buckets) => buckets.download_file(key, file_name).await,
-        }
-    }
-    async fn download_folder(&self, key: &str, new_folder_name: &str) -> anyhow::Result<bool> {
-        match self {
-            Sources::Buckets(buckets) => buckets.download_folder(key, new_folder_name).await,
+            Sources::Buckets(buckets) => buckets.download(items).await,
         }
     }
 }

@@ -1,5 +1,7 @@
 use anyhow::Result;
 
+use crate::providers::AwsClient;
+
 pub trait WithSources {
     fn set_source_with_idx(&mut self, idx: usize) -> &Option<String>;
     fn get_active_source(&self) -> &Option<String>;
@@ -10,4 +12,8 @@ pub trait WithSources {
 pub trait WithDownload {
     async fn download_file(&self, key: &str, file_name: &str) -> Result<bool>;
     async fn download_folder(&self, key: &str, new_folder_name: &str) -> Result<bool>;
+}
+
+pub trait Downloadable {
+    async fn download(&self, client: AwsClient, source: String) -> Result<bool>;
 }

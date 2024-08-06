@@ -226,6 +226,30 @@ impl AwsClient {
         actual_results?;
         Ok(true)
     }
+    pub async fn list_objects(&self, bucket: &str, prefix: &str) -> Vec<String> {
+        let mut response = self
+            .client
+            .list_objects_v2()
+            .bucket(bucket)
+            .prefix(prefix)
+            .into_paginator()
+            .send();
+        let mut result_files: Vec<String> = vec![];
+        while let Some(result) = response.next().await {
+            match result {
+                Ok(objects) => {
+                    let mut files = objects
+                        .contents()
+                        .iter()
+                        .map(|val| val.key().unwrap_or("Unknown").to_owned())
+                        .collect::<Vec<_>>();
+                    result_files.append(&mut files);
+                }
+                Err(_) => break,
+            };
+        }
+        result_files
+    }
 
     pub async fn list_objects_one_level(
         &self,
