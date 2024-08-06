@@ -5,7 +5,6 @@ pub use traits::WithSources;
 
 pub mod buckets;
 pub mod traits;
-mod types;
 
 #[derive(Debug, Clone)]
 pub enum Sources {
