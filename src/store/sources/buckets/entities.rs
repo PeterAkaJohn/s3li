@@ -1,4 +1,4 @@
-use anyhow::{Ok, Result};
+use anyhow::{Context, Ok, Result};
 
 use crate::{
     providers::AwsClient,
@@ -45,7 +45,15 @@ impl BucketFolder {
 
 impl Downloadable for BucketFile {
     async fn download(&self, client: AwsClient, source: String) -> Result<bool> {
-        client.download_file(&source, &self.key, &self.name).await
+        client
+            .download_file(&source, &self.key, &self.name)
+            .await
+            .with_context(|| {
+                format!(
+                    "File with key {} and name {} failed to download",
+                    self.key, self.name
+                )
+            })
     }
 }
 
@@ -58,12 +66,15 @@ impl Downloadable for BucketFolder {
             .map(|file| BucketFile::from_key(file, &self.key, &self.name))
             .collect::<Vec<_>>();
 
+        let mut results = vec![];
         for file_to_download in files_to_download {
-            file_to_download
-                .download(client.clone(), source.clone())
-                .await;
+            results.push(
+                file_to_download
+                    .download(client.clone(), source.clone())
+                    .await,
+            );
         }
-
+        results.into_iter().collect::<Result<Vec<bool>>>()?;
         Ok(true)
     }
 }
