@@ -15,7 +15,7 @@ use crate::{
 use super::{
     accounts::Accounts,
     action_manager::ActionManager,
-    explorer::{Explorer, File, Folder, TreeItem},
+    explorer::Explorer,
     notifications::Notifications,
     sources::{
         buckets::{entities::BucketItem, Buckets},

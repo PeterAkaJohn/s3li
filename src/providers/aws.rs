@@ -5,15 +5,12 @@ use std::{
     collections::HashMap,
     fs::{self, OpenOptions},
     io::Write,
-    sync::Arc,
 };
 
 use anyhow::Result;
 use aws_config::{profile::ProfileFileCredentialsProvider, BehaviorVersion, Region};
 use aws_sdk_s3::Client;
 pub use credentials::{AuthProperties, Credentials};
-
-use crate::logger::LOGGER;
 
 #[derive(Debug, Clone)]
 pub struct AwsClient {

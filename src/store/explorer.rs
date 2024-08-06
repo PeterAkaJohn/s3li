@@ -234,14 +234,6 @@ impl Node {
             files,
         }
     }
-
-    fn add_files(&mut self, files: Vec<File>) {
-        self.files = files;
-    }
-
-    fn add_children(&mut self, nodes: Vec<TreeNode>) {
-        self.children = nodes
-    }
 }
 
 type TreeNode = Arc<Mutex<Node>>;

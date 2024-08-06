@@ -2,13 +2,12 @@ pub mod entities;
 
 use std::sync::Arc;
 
-use anyhow::{anyhow, Result};
-use entities::BucketItem;
+use anyhow::Result;
 use tokio::sync::Mutex;
 
 use crate::providers::AwsClient;
 
-use super::traits::{Downloadable, WithDownload, WithSources};
+use super::traits::{Downloadable, WithSources};
 
 #[derive(Debug, Clone)]
 pub struct Buckets {

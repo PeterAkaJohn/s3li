@@ -1,9 +1,7 @@
 use anyhow::Result;
-use buckets::{entities::BucketItem, Buckets};
+use buckets::Buckets;
+use traits::Downloadable;
 pub use traits::WithSources;
-use traits::{Downloadable, WithDownload};
-
-use super::explorer::TreeItem;
 
 pub mod buckets;
 pub mod traits;
