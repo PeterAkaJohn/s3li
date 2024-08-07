@@ -135,6 +135,8 @@ impl State {
                     .collect();
                 let download_result = self.app_state.sources.download(items).await;
 
+                let _ = LOGGER.info(&format!("download result {download_result:#?}"));
+
                 if download_result.results.iter().any(|(_, res)| res.is_err()) {
                     for res in download_result.results {
                         match res {
