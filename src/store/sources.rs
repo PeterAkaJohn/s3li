@@ -1,7 +1,6 @@
-use anyhow::Result;
 use buckets::Buckets;
-use traits::Downloadable;
 pub use traits::WithSources;
+use traits::{DownloadResult, Downloadable};
 
 pub mod buckets;
 pub mod traits;
@@ -38,7 +37,7 @@ impl WithSources for Sources {
 }
 
 impl Sources {
-    pub async fn download(&self, items: Vec<impl Downloadable>) -> Result<Vec<bool>> {
+    pub async fn download(&self, items: Vec<impl Downloadable>) -> DownloadResult {
         match self {
             Sources::Buckets(buckets) => buckets.download(items).await,
         }

@@ -1,13 +1,15 @@
-use anyhow::{Context, Ok, Result};
+use anyhow::Context;
+use futures::future::join_all;
 
 use crate::{
     providers::AwsClient,
     store::{
         explorer::{File, Folder, TreeItem},
-        sources::traits::Downloadable,
+        sources::traits::{DownloadResult, Downloadable},
     },
 };
 
+#[derive(Clone)]
 pub struct BucketFile {
     key: String,
     name: String,
@@ -44,8 +46,9 @@ impl BucketFolder {
 }
 
 impl Downloadable for BucketFile {
-    async fn download(&self, client: AwsClient, source: String) -> Result<bool> {
-        client
+    async fn download(&self, client: AwsClient, source: String) -> DownloadResult {
+        let mut result = DownloadResult::default();
+        let download_result = client
             .download_file(&source, &self.key, &self.name)
             .await
             .with_context(|| {
@@ -53,12 +56,14 @@ impl Downloadable for BucketFile {
                     "File with key {} and name {} failed to download",
                     self.key, self.name
                 )
-            })
+            });
+        result.append_to_result(download_result);
+        result
     }
 }
 
 impl Downloadable for BucketFolder {
-    async fn download(&self, client: AwsClient, source: String) -> Result<bool> {
+    async fn download(&self, client: AwsClient, source: String) -> DownloadResult {
         let files_in_folder = client.list_objects(&source, &self.key).await;
 
         let files_to_download = files_in_folder
@@ -66,16 +71,28 @@ impl Downloadable for BucketFolder {
             .map(|file| BucketFile::from_key(file, &self.key, &self.name))
             .collect::<Vec<_>>();
 
-        let mut results = vec![];
-        for file_to_download in files_to_download {
-            results.push(
-                file_to_download
-                    .download(client.clone(), source.clone())
-                    .await,
-            );
-        }
-        results.into_iter().collect::<Result<Vec<bool>>>()?;
-        Ok(true)
+        let operations = files_to_download
+            .into_iter()
+            .map(|file_to_download| {
+                let client_cloned = client.clone();
+                let source_cloned = source.clone();
+                tokio::task::spawn(async move {
+                    file_to_download
+                        .clone()
+                        .download(client_cloned, source_cloned)
+                        .await
+                })
+            })
+            .collect::<Vec<_>>();
+
+        let results = join_all(operations).await;
+        let all_results = results
+            .into_iter()
+            .map(|res| res.unwrap())
+            .collect::<Vec<_>>();
+        all_results
+            .into_iter()
+            .fold(DownloadResult::default(), |acc, res| acc.merge_results(res))
     }
 }
 
@@ -108,7 +125,7 @@ impl From<TreeItem> for BucketItem {
 }
 
 impl Downloadable for BucketItem {
-    async fn download(&self, client: AwsClient, source: String) -> Result<bool> {
+    async fn download(&self, client: AwsClient, source: String) -> DownloadResult {
         match self {
             BucketItem::BucketFile(file) => file.download(client, source.to_string()).await,
             BucketItem::BucketFolder(folder) => folder.download(client, source.to_string()).await,

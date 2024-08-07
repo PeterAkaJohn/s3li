@@ -9,6 +9,21 @@ pub trait WithSources {
     async fn update_available_sources(&mut self);
 }
 
+#[derive(Default)]
+pub struct DownloadResult {
+    pub results: Vec<Result<bool>>,
+}
+
+impl DownloadResult {
+    pub fn append_to_result(&mut self, result: Result<bool>) {
+        self.results.push(result);
+    }
+    pub fn merge_results(mut self, other_result: DownloadResult) -> Self {
+        self.results.extend(other_result.results);
+        self
+    }
+}
+
 pub trait Downloadable {
-    async fn download(&self, client: AwsClient, source: String) -> Result<bool>;
+    async fn download(&self, client: AwsClient, source: String) -> DownloadResult;
 }

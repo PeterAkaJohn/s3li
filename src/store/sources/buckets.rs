@@ -2,12 +2,11 @@ pub mod entities;
 
 use std::sync::Arc;
 
-use anyhow::Result;
 use tokio::sync::Mutex;
 
 use crate::providers::AwsClient;
 
-use super::traits::{Downloadable, WithSources};
+use super::traits::{DownloadResult, Downloadable, WithSources};
 
 #[derive(Debug, Clone)]
 pub struct Buckets {
@@ -52,19 +51,17 @@ impl WithSources for Buckets {
 }
 
 impl Buckets {
-    pub async fn download(&self, items: Vec<impl Downloadable>) -> Result<Vec<bool>> {
-        let mut results: Vec<Result<bool>> = vec![];
+    pub async fn download(&self, items: Vec<impl Downloadable>) -> DownloadResult {
+        let mut result = DownloadResult::default();
         for item in items {
-            results.push(
-                item.download(
+            let download_result = item
+                .download(
                     self.client.lock().await.clone(),
                     self.active_source.clone().unwrap(),
                 )
-                .await,
-            );
+                .await;
+            result = result.merge_results(download_result);
         }
-
-        let result: Result<Vec<bool>> = results.into_iter().collect();
         result
     }
 }

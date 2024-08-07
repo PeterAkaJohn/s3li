@@ -133,12 +133,26 @@ impl State {
                     .into_iter()
                     .map(|item| item.into())
                     .collect();
-                if let Err(e) = self.app_state.sources.download(items).await {
-                    let _ = LOGGER.info("error downloading items");
-                    let _ = LOGGER.info(&format!("{:?}", e));
-                    self.app_state
-                        .notifications
-                        .push("Failed to download items".to_string(), true);
+                let download_result = self.app_state.sources.download(items).await;
+
+                if download_result.results.iter().any(|res| res.is_err()) {
+                    for res in download_result.results {
+                        match res {
+                            Ok(_) => {
+                                self.app_state.notifications.push(
+                                    "Successfully downloaded requested items".to_string(),
+                                    false,
+                                );
+                            }
+                            Err(e) => {
+                                let _ = LOGGER.info("error downloading item");
+                                let _ = LOGGER.info(&format!("{:?}", e));
+                                self.app_state
+                                    .notifications
+                                    .push("Failed to download item".to_string(), true);
+                            }
+                        }
+                    }
                 } else {
                     self.app_state
                         .notifications
