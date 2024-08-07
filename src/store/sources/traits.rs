@@ -11,12 +11,12 @@ pub trait WithSources {
 
 #[derive(Default)]
 pub struct DownloadResult {
-    pub results: Vec<Result<bool>>,
+    pub results: Vec<(String, Result<bool>)>,
 }
 
 impl DownloadResult {
-    pub fn append_to_result(&mut self, result: Result<bool>) {
-        self.results.push(result);
+    pub fn append_to_result(&mut self, file_key: String, result: Result<bool>) {
+        self.results.push((file_key, result));
     }
     pub fn merge_results(mut self, other_result: DownloadResult) -> Self {
         self.results.extend(other_result.results);

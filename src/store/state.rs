@@ -135,21 +135,21 @@ impl State {
                     .collect();
                 let download_result = self.app_state.sources.download(items).await;
 
-                if download_result.results.iter().any(|res| res.is_err()) {
+                if download_result.results.iter().any(|(_, res)| res.is_err()) {
                     for res in download_result.results {
                         match res {
-                            Ok(_) => {
+                            (file_key, Ok(_)) => {
                                 self.app_state.notifications.push(
-                                    "Successfully downloaded requested items".to_string(),
+                                    format!("Successfully downloaded requested item {file_key}"),
                                     false,
                                 );
                             }
-                            Err(e) => {
-                                let _ = LOGGER.info("error downloading item");
+                            (file_key, Err(e)) => {
+                                let _ = LOGGER.info(&format!("error downloading item {file_key}"));
                                 let _ = LOGGER.info(&format!("{:?}", e));
                                 self.app_state
                                     .notifications
-                                    .push("Failed to download item".to_string(), true);
+                                    .push(format!("Failed to download item {file_key}"), true);
                             }
                         }
                     }

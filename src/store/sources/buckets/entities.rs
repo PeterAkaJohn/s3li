@@ -57,7 +57,7 @@ impl Downloadable for BucketFile {
                     self.key, self.name
                 )
             });
-        result.append_to_result(download_result);
+        result.append_to_result(self.key.clone(), download_result);
         result
     }
 }
