@@ -12,7 +12,7 @@ pub enum Action {
     SetSource(usize),
     SetAccount(usize),
     SetExplorerFolder(TreeItem),
-    DownloadFile(Vec<TreeItem>),
+    Download(Vec<TreeItem>),
     ChangeRegion(String),
     RefreshCredentials,
     EditCredentials(String, AuthProperties),

@@ -5,15 +5,12 @@ use std::{
     collections::HashMap,
     fs::{self, OpenOptions},
     io::Write,
-    sync::Arc,
 };
 
 use anyhow::Result;
 use aws_config::{profile::ProfileFileCredentialsProvider, BehaviorVersion, Region};
 use aws_sdk_s3::Client;
 pub use credentials::{AuthProperties, Credentials};
-
-use crate::logger::LOGGER;
 
 #[derive(Debug, Clone)]
 pub struct AwsClient {
@@ -122,60 +119,16 @@ impl AwsClient {
         destination_file.write_all(&bytes)?;
         Ok(true)
     }
-    pub async fn download_file_string(
-        &self,
-        bucket: String,
-        file_key: String,
-        file_name: String,
-    ) -> Result<bool> {
-        let parent_folder_to_create = file_name
-            .split('/')
-            .collect::<Vec<_>>()
-            .into_iter()
-            .rev()
-            .skip(1)
-            .rev()
-            .collect::<Vec<_>>();
 
-        let parent_folder_to_create = parent_folder_to_create.join("/");
-
-        let _ = fs::create_dir_all(parent_folder_to_create);
-
-        let mut destination_file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(file_name)?;
-
-        let object = self
-            .client
-            .get_object()
-            .bucket(bucket)
-            .key(file_key)
-            .send()
-            .await?;
-        let bytes = object.body.collect().await?.into_bytes();
-        destination_file.write_all(&bytes)?;
-        Ok(true)
-    }
-
-    pub async fn download_folder(
-        &self,
-        bucket: &str,
-        folder_key: &str,
-        folder_name: &str,
-    ) -> Result<bool> {
-        // download should be defined on files and folders not like this, doesn't feel right
+    pub async fn list_objects(&self, bucket: &str, prefix: &str) -> Vec<String> {
         let mut response = self
             .client
             .list_objects_v2()
             .bucket(bucket)
-            .prefix(folder_key)
+            .prefix(prefix)
             .into_paginator()
             .send();
-        let mut files_to_download: Vec<String> = vec![];
-        let chars_to_remove = folder_key.chars().count();
-
+        let mut result_files: Vec<String> = vec![];
         while let Some(result) = response.next().await {
             match result {
                 Ok(objects) => {
@@ -184,50 +137,15 @@ impl AwsClient {
                         .iter()
                         .map(|val| val.key().unwrap_or("Unknown").to_owned())
                         .collect::<Vec<_>>();
-                    files_to_download.append(&mut files);
+                    result_files.append(&mut files);
                 }
                 Err(_) => break,
-            }
+            };
         }
-
-        let files_to_download = files_to_download
-            .iter()
-            .map(|file| {
-                let new_file_name = file.chars().skip(chars_to_remove).collect::<String>();
-
-                (
-                    Arc::new(self.clone()),
-                    bucket.to_string(),
-                    file.clone(),
-                    format!("{folder_name}/{new_file_name}"),
-                )
-            })
-            .collect::<Vec<(Arc<AwsClient>, String, String, String)>>();
-
-        let _ = LOGGER.info(&format!("files to download {:#?}", files_to_download));
-
-        let operations = files_to_download
-            .into_iter()
-            .map(|item| {
-                tokio::task::spawn(async move {
-                    item.0
-                        .clone()
-                        .download_file_string(item.1, item.2, item.3)
-                        .await
-                })
-            })
-            .collect::<Vec<_>>();
-        let mut results = Vec::with_capacity(operations.len());
-        for op in operations {
-            results.push(op.await.unwrap());
-        }
-
-        let actual_results: Result<Vec<bool>> = results.into_iter().collect();
-        actual_results?;
-        Ok(true)
+        result_files
     }
 
-    pub async fn list_objects(
+    pub async fn list_objects_one_level(
         &self,
         bucket: &str,
         current_folder: Option<&str>,

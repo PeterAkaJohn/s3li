@@ -138,7 +138,12 @@ impl Explorer {
     }
 
     pub async fn create_file_tree(&mut self, bucket: &str) {
-        let (files, folders) = self.client.lock().await.list_objects(bucket, None).await;
+        let (files, folders) = self
+            .client
+            .lock()
+            .await
+            .list_objects_one_level(bucket, None)
+            .await;
         let file_tree = FileTree::new(
             "/".parse().expect("root_folder initialization cannot fail"),
             folders
@@ -176,7 +181,7 @@ impl Explorer {
             .client
             .lock()
             .await
-            .list_objects(
+            .list_objects_one_level(
                 bucket,
                 new_selected_folder
                     .map(|folder| folder.name.clone())
@@ -228,14 +233,6 @@ impl Node {
             children,
             files,
         }
-    }
-
-    fn add_files(&mut self, files: Vec<File>) {
-        self.files = files;
-    }
-
-    fn add_children(&mut self, nodes: Vec<TreeNode>) {
-        self.children = nodes
     }
 }
 

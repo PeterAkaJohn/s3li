@@ -98,7 +98,7 @@ impl Component for Download {
             }
             crossterm::event::KeyCode::Enter => {
                 // send region to state with ui_tx
-                let _ = self.ui_tx.send(Action::DownloadFile(self.items.clone()));
+                let _ = self.ui_tx.send(Action::Download(self.items.clone()));
                 self.open = false;
             }
             crossterm::event::KeyCode::Tab => {

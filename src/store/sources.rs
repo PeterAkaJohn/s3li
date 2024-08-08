@@ -1,5 +1,6 @@
 use buckets::Buckets;
 pub use traits::WithSources;
+use traits::{DownloadResult, Downloadable};
 
 pub mod buckets;
 pub mod traits;
@@ -33,15 +34,12 @@ impl WithSources for Sources {
             Sources::Buckets(buckets) => buckets.update_available_sources().await,
         };
     }
+}
 
-    async fn download_file(&self, key: &str, file_name: &str) -> anyhow::Result<bool> {
+impl Sources {
+    pub async fn download(&self, items: Vec<impl Downloadable>) -> DownloadResult {
         match self {
-            Sources::Buckets(buckets) => buckets.download_file(key, file_name).await,
-        }
-    }
-    async fn download_folder(&self, key: &str, new_folder_name: &str) -> anyhow::Result<bool> {
-        match self {
-            Sources::Buckets(buckets) => buckets.download_folder(key, new_folder_name).await,
+            Sources::Buckets(buckets) => buckets.download(items).await,
         }
     }
 }

@@ -1,11 +1,12 @@
+pub mod entities;
+
 use std::sync::Arc;
 
-use anyhow::{anyhow, Result};
 use tokio::sync::Mutex;
 
 use crate::providers::AwsClient;
 
-use super::traits::WithSources;
+use super::traits::{DownloadResult, Downloadable, WithSources};
 
 #[derive(Debug, Clone)]
 pub struct Buckets {
@@ -47,30 +48,20 @@ impl WithSources for Buckets {
         };
         self.available_sources = sources;
     }
+}
 
-    async fn download_file(&self, key: &str, file_name: &str) -> Result<bool> {
-        let selected_bucket = self.get_active_source();
-        if let Some(bucket) = selected_bucket {
-            self.client
-                .lock()
-                .await
-                .download_file(bucket, key, file_name)
-                .await
-        } else {
-            Err(anyhow!("selected bucket was empty!!!"))
+impl Buckets {
+    pub async fn download(&self, items: Vec<impl Downloadable>) -> DownloadResult {
+        let mut result = DownloadResult::default();
+        for item in items {
+            let download_result = item
+                .download(
+                    self.client.lock().await.clone(),
+                    self.active_source.clone().unwrap(),
+                )
+                .await;
+            result = result.merge_results(download_result);
         }
-    }
-
-    async fn download_folder(&self, key: &str, new_folder_name: &str) -> Result<bool> {
-        let selected_bucket = self.get_active_source();
-        if let Some(bucket) = selected_bucket {
-            self.client
-                .lock()
-                .await
-                .download_folder(bucket, key, new_folder_name)
-                .await
-        } else {
-            Err(anyhow!("selected bucket was empty!!!"))
-        }
+        result
     }
 }

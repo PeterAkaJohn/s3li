@@ -15,9 +15,13 @@ use crate::{
 use super::{
     accounts::Accounts,
     action_manager::ActionManager,
-    explorer::{Explorer, File, Folder, TreeItem},
+    explorer::Explorer,
     notifications::Notifications,
-    sources::{buckets::Buckets, traits::WithSources, Sources},
+    sources::{
+        buckets::{entities::BucketItem, Buckets},
+        traits::WithSources,
+        Sources,
+    },
 };
 
 #[derive(Default, Debug, Clone)]
@@ -124,67 +128,37 @@ impl State {
                     .notifications
                     .push("Credentials updated".to_string(), false);
             }
-            Action::DownloadFile(items_to_download) => {
-                for tree_item in items_to_download {
-                    match tree_item {
-                        TreeItem::Folder(
-                            Folder {
-                                name,
-                                relative_name,
-                                ..
-                            },
-                            _,
-                        ) => {
-                            let _ = LOGGER.info(&format!("{:?}", name));
-                            if let Err(e) = self
-                                .app_state
-                                .sources
-                                .download_folder(&name, &relative_name)
-                                .await
-                            {
-                                let _ = LOGGER.info(&format!("error downloading Folder {name}"));
-                                let _ = LOGGER.info(&format!("{:?}", e));
-                                self.app_state
-                                    .notifications
-                                    .push(format!("Failed to download Folder {name}"), true);
-                            } else {
+            Action::Download(items_to_download) => {
+                let items: Vec<BucketItem> = items_to_download
+                    .into_iter()
+                    .map(|item| item.into())
+                    .collect();
+                let download_result = self.app_state.sources.download(items).await;
+
+                let _ = LOGGER.info(&format!("download result {download_result:#?}"));
+
+                if download_result.results.iter().any(|(_, res)| res.is_err()) {
+                    for res in download_result.results {
+                        match res {
+                            (file_key, Ok(_)) => {
                                 self.app_state.notifications.push(
-                                    format!(
-                                    "Folder {name} downloaded to current location with name {relative_name}"
-                                ),
+                                    format!("Successfully downloaded requested item {file_key}"),
                                     false,
                                 );
                             }
-                        }
-                        TreeItem::File(
-                            File {
-                                name,
-                                relative_name,
-                                ..
-                            },
-                            _,
-                        ) => {
-                            if let Err(e) = self
-                                .app_state
-                                .sources
-                                .download_file(&name, &relative_name)
-                                .await
-                            {
-                                let _ = LOGGER.info(&format!("error downloading file {name}"));
+                            (file_key, Err(e)) => {
+                                let _ = LOGGER.info(&format!("error downloading item {file_key}"));
                                 let _ = LOGGER.info(&format!("{:?}", e));
                                 self.app_state
                                     .notifications
-                                    .push(format!("Failed to download file {name}"), true);
-                            } else {
-                                self.app_state.notifications.push(
-                                    format!(
-                                    "File {name} downloaded to current location with name {relative_name}"
-                                ),
-                                    false,
-                                );
+                                    .push(format!("Failed to download item {file_key}"), true);
                             }
                         }
                     }
+                } else {
+                    self.app_state
+                        .notifications
+                        .push("Successfully downloaded requested items".to_string(), false);
                 }
             }
             Action::CycleSelectedComponent => match self.app_state.selected_component {
