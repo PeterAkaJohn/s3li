@@ -80,9 +80,10 @@ impl State {
                     )
                     .await;
                 if let Some(folder) = new_selected_folder {
-                    self.app_state
-                        .notifications
-                        .push(format!("Folder {} has been selected", folder.name), false);
+                    self.app_state.notifications.push_notification(
+                        format!("Folder {} has been selected", folder.name),
+                        false,
+                    );
                 }
             }
             Action::SetSource(source_idx) => {
@@ -92,13 +93,13 @@ impl State {
                     self.app_state.selected_component = DashboardComponents::Explorer;
                     self.app_state
                         .notifications
-                        .push(format!("Source {bucket} has been selected"), false);
+                        .push_notification(format!("Source {bucket} has been selected"), false);
                 }
             }
             Action::SetAccount(account_idx) => {
                 self.app_state.accounts.set_account(account_idx).await;
                 self.app_state.sources.update_available_sources().await;
-                self.app_state.notifications.push(
+                self.app_state.notifications.push_notification(
                     format!("Account with idx {account_idx} has been selected"),
                     false,
                 );
@@ -110,13 +111,13 @@ impl State {
                     .await;
                 self.app_state
                     .notifications
-                    .push(format!("Region changed to {}", &new_region), false);
+                    .push_notification(format!("Region changed to {}", &new_region), false);
             }
             Action::RefreshCredentials => {
                 self.app_state.accounts.refresh_credentials().await;
                 self.app_state
                     .notifications
-                    .push("Credentials refreshed".to_string(), false);
+                    .push_notification("Credentials refreshed".to_string(), false);
             }
 
             Action::EditCredentials(account, properties) => {
@@ -126,7 +127,7 @@ impl State {
                     .await;
                 self.app_state
                     .notifications
-                    .push("Credentials updated".to_string(), false);
+                    .push_notification("Credentials updated".to_string(), false);
             }
             Action::Download(items_to_download) => {
                 let items: Vec<BucketItem> = items_to_download
@@ -141,7 +142,7 @@ impl State {
                     for res in download_result.results {
                         match res {
                             (file_key, Ok(_)) => {
-                                self.app_state.notifications.push(
+                                self.app_state.notifications.push_notification(
                                     format!("Successfully downloaded requested item {file_key}"),
                                     false,
                                 );
@@ -149,16 +150,18 @@ impl State {
                             (file_key, Err(e)) => {
                                 let _ = LOGGER.info(&format!("error downloading item {file_key}"));
                                 let _ = LOGGER.info(&format!("{:?}", e));
-                                self.app_state
-                                    .notifications
-                                    .push(format!("Failed to download item {file_key}"), true);
+                                self.app_state.notifications.push_notification(
+                                    format!("Failed to download item {file_key}"),
+                                    true,
+                                );
                             }
                         }
                     }
                 } else {
-                    self.app_state
-                        .notifications
-                        .push("Successfully downloaded requested items".to_string(), false);
+                    self.app_state.notifications.push_notification(
+                        "Successfully downloaded requested items".to_string(),
+                        false,
+                    );
                 }
             }
             Action::CycleSelectedComponent => match self.app_state.selected_component {
