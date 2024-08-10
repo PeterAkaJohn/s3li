@@ -139,6 +139,7 @@ impl State {
                 let _ = LOGGER.info(&format!("download result {download_result:#?}"));
 
                 if download_result.results.iter().any(|(_, res)| res.is_err()) {
+                    let mut failed_items = vec![];
                     for res in download_result.results {
                         match res {
                             (file_key, Ok(_)) => {
@@ -150,13 +151,19 @@ impl State {
                             (file_key, Err(e)) => {
                                 let _ = LOGGER.info(&format!("error downloading item {file_key}"));
                                 let _ = LOGGER.info(&format!("{:?}", e));
-                                self.app_state.notifications.push_notification(
-                                    format!("Failed to download item {file_key}"),
-                                    true,
-                                );
+                                failed_items.push(file_key);
+                                // self.app_state.notifications.push_notification(
+                                //     format!("Failed to download item {file_key}"),
+                                // //     true,
+                                // );
                             }
                         }
                     }
+                    let mut alert_message = "These items failed downloading:".to_string();
+                    for item in &failed_items {
+                        alert_message.push_str(&format!("\n{item}"));
+                    }
+                    self.app_state.notifications.push_alert(alert_message);
                 } else {
                     self.app_state.notifications.push_notification(
                         "Successfully downloaded requested items".to_string(),

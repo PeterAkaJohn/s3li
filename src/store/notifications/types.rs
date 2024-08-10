@@ -1,7 +1,16 @@
 #[derive(Default, Debug, Clone)]
 pub struct Notification {
-    pub message: String,
-    pub error: bool,
+    message: String,
+    error: bool,
+}
+
+impl Notification {
+    pub fn get_message(&self) -> &str {
+        &self.message
+    }
+    pub fn has_error(&self) -> bool {
+        self.error
+    }
 }
 
 #[derive(Default, Debug, Clone)]
@@ -18,24 +27,21 @@ impl Notifications {
             }));
     }
 
-    pub fn push_alert(&mut self, message: String, error: bool) {
+    pub fn push_alert(&mut self, message: String) {
         self.notifications
-            .push(NotificationType::Alert(Notification { message, error }));
+            .push(NotificationType::Alert(Notification {
+                message,
+                error: true,
+            }));
     }
 
-    pub fn get_last(&self) -> Option<&Notification> {
-        match self.notifications.last() {
-            Some(notification) => match notification {
-                NotificationType::Notification(notification) => Some(notification),
-                NotificationType::Alert(notification) => Some(notification),
-            },
-            None => None,
-        }
+    pub fn get_last(&self) -> Option<&NotificationType> {
+        self.notifications.last()
     }
 }
 
 #[derive(Clone, Debug)]
-enum NotificationType {
+pub enum NotificationType {
     Notification(Notification),
     Alert(Notification),
 }
