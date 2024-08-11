@@ -44,7 +44,7 @@ impl Dashboard {
         );
 
         let explorer = Explorer::new(None, None, ui_tx.clone());
-        let notifications = NotificationsUI::new(state.notifications.clone());
+        let notifications = NotificationsUI::new(state.notifications.clone(), ui_tx.clone());
         Dashboard {
             selected_component: state.selected_component.clone(),
             sources,
@@ -74,7 +74,7 @@ impl Dashboard {
             self.ui_tx.clone(),
         );
 
-        let notifications = NotificationsUI::new(state.notifications.clone());
+        let notifications = NotificationsUI::new(state.notifications.clone(), self.ui_tx.clone());
         let aside_constraints =
             if matches!(&state.selected_component, &DashboardComponents::Accounts) {
                 [Constraint::Length(3), Constraint::Fill(1)]
@@ -150,6 +150,9 @@ impl Component for Dashboard {
 
     fn handle_key_events(&mut self, key: KeyEvent) {
         let keycode = key.code;
+        if self.notifications.has_visible_alert() {
+            return self.notifications.handle_key_events(key);
+        }
         match self.selected_component {
             DashboardComponents::Sources => match keycode {
                 crossterm::event::KeyCode::Left

@@ -18,4 +18,5 @@ pub enum Action {
     EditCredentials(String, AuthProperties),
     SetSelectedComponent(DashboardComponents),
     CycleSelectedComponent,
+    DismissLastAlert,
 }
