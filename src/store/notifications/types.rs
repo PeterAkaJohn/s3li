@@ -2,6 +2,7 @@
 pub struct Notification {
     message: String,
     error: bool,
+    shown: bool,
 }
 
 impl Notification {
@@ -10,6 +11,12 @@ impl Notification {
     }
     pub fn has_error(&self) -> bool {
         self.error
+    }
+    pub fn has_been_shown(&self) -> bool {
+        self.shown
+    }
+    pub fn set_shown(&mut self) {
+        self.shown = true
     }
 }
 
@@ -24,6 +31,7 @@ impl Notifications {
             .push(NotificationType::Notification(Notification {
                 message,
                 error,
+                shown: true,
             }));
     }
 
@@ -32,11 +40,17 @@ impl Notifications {
             .push(NotificationType::Alert(Notification {
                 message,
                 error: true,
+                shown: false,
             }));
     }
 
     pub fn get_last(&self) -> Option<&NotificationType> {
         self.notifications.last()
+    }
+    pub fn set_last_alert_as_shown(&mut self) {
+        if let Some(NotificationType::Alert(notification)) = self.notifications.last_mut() {
+            notification.set_shown();
+        }
     }
 }
 

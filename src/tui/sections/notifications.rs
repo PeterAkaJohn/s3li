@@ -1,24 +1,32 @@
 use ratatui::{
     layout::{Constraint, Direction, Layout},
-    style::{Color, Style, Styled},
-    widgets::{Block, BorderType, Borders, Clear, Padding, Paragraph, Wrap},
+    style::{Color, Style},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
 };
+use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
-    store::notifications::{
-        types::{self, NotificationType},
-        Notifications,
-    },
+    action::Action,
+    store::notifications::{types::NotificationType, Notifications},
     tui::components::traits::{Component, ComponentProps, WithContainer},
 };
 
 pub struct NotificationsUI {
     notifications: Notifications,
+    alert_visible: bool,
+    ui_tx: UnboundedSender<Action>,
 }
 
 impl NotificationsUI {
-    pub fn new(notifications: Notifications) -> NotificationsUI {
-        NotificationsUI { notifications }
+    pub fn new(notifications: Notifications, ui_tx: UnboundedSender<Action>) -> NotificationsUI {
+        NotificationsUI {
+            notifications,
+            alert_visible: false,
+            ui_tx,
+        }
+    }
+    pub fn has_visible_alert(&self) -> bool {
+        self.alert_visible
     }
 }
 
@@ -46,8 +54,10 @@ impl Component for NotificationsUI {
                     };
                     let notification_text = Paragraph::new(notification.get_message()).style(style);
                     f.render_widget(notification_text, inner_container);
+                    self.alert_visible = false;
                 }
-                NotificationType::Alert(notification) => {
+                NotificationType::Alert(notification) if !notification.has_been_shown() => {
+                    self.alert_visible = true;
                     let layout = Layout::default()
                         .direction(Direction::Vertical)
                         .constraints([
@@ -73,9 +83,12 @@ impl Component for NotificationsUI {
                     f.render_widget(Clear, center_section);
                     f.render_widget(notification_text, center_section);
                 }
+                _ => self.alert_visible = false,
             };
         }
         f.render_widget(container, area);
     }
-    fn handle_key_events(&mut self, _key: crossterm::event::KeyEvent) {}
+    fn handle_key_events(&mut self, _key: crossterm::event::KeyEvent) {
+        self.ui_tx.send(Action::DismissLastAlert);
+    }
 }

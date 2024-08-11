@@ -183,6 +183,9 @@ impl State {
             Action::SetSelectedComponent(selected_component) => {
                 self.app_state.selected_component = selected_component;
             }
+            Action::DismissLastAlert => {
+                self.app_state.notifications.set_last_alert_as_shown();
+            }
             unhandled_action => {
                 let _ = LOGGER.info(&format!("ignoring action {:#?}", unhandled_action));
             }
