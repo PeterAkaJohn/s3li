@@ -7,6 +7,7 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::{
     action::Action,
     store::{
+        notifications::types::Notification,
         sources::WithSources,
         state::{AppState, DashboardComponents},
     },
@@ -55,6 +56,9 @@ impl Dashboard {
             aside_constraints: [Constraint::Length(3), Constraint::Fill(1)],
         }
     }
+    pub fn handle_alert(&mut self, alert: Notification) {
+        self.notifications.set_alert(Some(alert));
+    }
     pub fn refresh_components(self, state: &AppState) -> Self {
         let sources = Sources::new(
             state.sources.get_available_sources(),
@@ -74,7 +78,7 @@ impl Dashboard {
             self.ui_tx.clone(),
         );
 
-        let notifications = NotificationsUI::new(state.notifications.clone(), self.ui_tx.clone());
+        let notifications = self.notifications.refresh(state.notifications.clone());
         let aside_constraints =
             if matches!(&state.selected_component, &DashboardComponents::Accounts) {
                 [Constraint::Length(3), Constraint::Fill(1)]

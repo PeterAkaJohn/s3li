@@ -16,7 +16,7 @@ use futures::StreamExt;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 
-use crate::{action::Action, store::state::AppState, tui::components::traits::Component};
+use crate::{action::Action, store::state::StateEvents, tui::components::traits::Component};
 
 use super::screens::dashboard::Dashboard;
 
@@ -30,10 +30,11 @@ impl Ui {
         (Self { tx }, rx)
     }
 
-    pub async fn start(self, mut state_rx: UnboundedReceiver<AppState>) -> Result<()> {
-        let mut dash = {
-            let state = state_rx.recv().await.unwrap();
+    pub async fn start(self, mut state_rx: UnboundedReceiver<StateEvents>) -> Result<()> {
+        let mut dash = if let StateEvents::UpdateState(state) = state_rx.recv().await.unwrap() {
             Dashboard::new(&state, self.tx.clone())
+        } else {
+            panic!("should always have the first state");
         };
 
         let mut terminal = setup_terminal()?;
@@ -66,7 +67,15 @@ impl Ui {
                     }
                 },
                 Some(updated_state) = state_rx.recv() => {
-                    dash = dash.refresh_components(&updated_state);
+                    match updated_state {
+                        StateEvents::UpdateState(state) => {
+                            dash = dash.refresh_components(&state);
+                        }
+                        StateEvents::Alert(alert) => {
+                            dash.handle_alert(alert);
+                        }
+
+                    }
                 },
             }
 

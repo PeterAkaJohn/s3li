@@ -1,3 +1,7 @@
+mod app_state;
+pub use app_state::StateEvents;
+pub use app_state::{AppState, DashboardComponents};
+
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -6,11 +10,8 @@ use tokio::sync::{
     Mutex,
 };
 
-use crate::{
-    action::Action,
-    logger::{LogToFile, LOGGER},
-    providers::AwsClient,
-};
+use crate::store::notifications::types::NotificationType;
+use crate::{action::Action, logger::LOGGER, providers::AwsClient};
 
 use super::{
     accounts::Accounts,
@@ -24,38 +25,13 @@ use super::{
     },
 };
 
-#[derive(Default, Debug, Clone)]
-pub enum DashboardComponents {
-    Sources,
-    #[default]
-    Accounts,
-    Explorer,
-}
-
-#[derive(Debug, Clone)]
-pub struct AppState {
-    pub sources: Sources,
-    pub accounts: Accounts,
-    pub explorer: Explorer,
-    pub action_manager: ActionManager,
-    pub notifications: Notifications,
-    pub selected_component: DashboardComponents,
-}
-
-impl LogToFile for AppState {
-    fn info(&self, message: &str) -> Result<()> {
-        let _ = self.write_to_file(message);
-        self.write_to_file(&format!("{:#?}", self))
-    }
-}
-
 pub struct State {
     pub app_state: AppState,
-    pub tx: UnboundedSender<AppState>,
+    pub tx: UnboundedSender<StateEvents>,
 }
 
 impl State {
-    pub async fn new(client: Arc<Mutex<AwsClient>>) -> (Self, UnboundedReceiver<AppState>) {
+    pub async fn new(client: Arc<Mutex<AwsClient>>) -> (Self, UnboundedReceiver<StateEvents>) {
         let (tx, rx) = mpsc::unbounded_channel();
         let app_state = AppState {
             sources: Sources::Buckets(Buckets::new(client.clone())),
@@ -194,7 +170,8 @@ impl State {
 
     pub async fn start(&mut self, mut ui_rx: UnboundedReceiver<Action>) -> Result<()> {
         // we need to send first state to unlock the ui
-        self.tx.send(self.app_state.clone())?;
+        self.tx
+            .send(StateEvents::UpdateState(self.app_state.clone()))?;
         // need to loop over ui_rx to react to user input
         loop {
             tokio::select! {
@@ -207,7 +184,14 @@ impl State {
                         Action::Key(_) =>{},
                         _ => self.handle_state_action(action).await,
                     };
-                    self.tx.send(self.app_state.clone())?;
+                let last_notification = self.app_state.notifications.get_last();
+                if let Some(NotificationType::Alert(alert)) = last_notification {
+                        if !alert.has_been_shown() {
+                            self.tx.send(StateEvents::Alert(alert.clone()))?;
+                        }
+                    }
+                self.tx
+                    .send(StateEvents::UpdateState(self.app_state.clone()))?;
                 }
             }
         }
