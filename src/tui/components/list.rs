@@ -77,27 +77,39 @@ impl ListComponent<String> {
     fn register_listeners() -> Vec<S3liEventListener<Self>> {
         vec![
             (
-                S3liKeyEvent::new(crossterm::event::KeyCode::Char(' '), KeyModifiers::NONE),
+                S3liKeyEvent::new(vec![(
+                    crossterm::event::KeyCode::Char(' '),
+                    KeyModifiers::NONE,
+                )]),
                 Self::select_multi,
             ),
             (
-                S3liKeyEvent::new(crossterm::event::KeyCode::Esc, KeyModifiers::NONE),
+                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Esc, KeyModifiers::NONE)]),
                 Self::cancel,
             ),
             (
-                S3liKeyEvent::new(crossterm::event::KeyCode::Char('v'), KeyModifiers::NONE),
+                S3liKeyEvent::new(vec![(
+                    crossterm::event::KeyCode::Char('v'),
+                    KeyModifiers::NONE,
+                )]),
                 Self::visual_block,
             ),
             (
-                S3liKeyEvent::new(crossterm::event::KeyCode::Char('k'), KeyModifiers::NONE),
+                S3liKeyEvent::new(vec![(
+                    crossterm::event::KeyCode::Char('k'),
+                    KeyModifiers::NONE,
+                )]),
                 Self::move_up,
             ),
             (
-                S3liKeyEvent::new(crossterm::event::KeyCode::Char('j'), KeyModifiers::NONE),
+                S3liKeyEvent::new(vec![(
+                    crossterm::event::KeyCode::Char('j'),
+                    KeyModifiers::NONE,
+                )]),
                 Self::move_down,
             ),
             (
-                S3liKeyEvent::new(crossterm::event::KeyCode::Enter, KeyModifiers::NONE),
+                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)]),
                 Self::confirm_selection,
             ),
         ]

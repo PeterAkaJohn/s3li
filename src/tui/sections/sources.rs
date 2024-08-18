@@ -37,7 +37,7 @@ impl Sources {
 
     fn register_listeners() -> Vec<S3liEventListener<Self>> {
         vec![(
-            S3liKeyEvent::new(crossterm::event::KeyCode::Enter, KeyModifiers::NONE),
+            S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)]),
             Self::enter_pressed,
         )]
     }
