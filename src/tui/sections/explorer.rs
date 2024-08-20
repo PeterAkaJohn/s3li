@@ -110,17 +110,17 @@ impl Explorer {
                 Self::visual_block,
             ),
             (
-                S3liKeyEvent::new(vec![(
-                    crossterm::event::KeyCode::Char('k'),
-                    KeyModifiers::NONE,
-                )]),
+                S3liKeyEvent::new(vec![
+                    (crossterm::event::KeyCode::Char('k'), KeyModifiers::NONE),
+                    (crossterm::event::KeyCode::Up, KeyModifiers::NONE),
+                ]),
                 Self::move_up,
             ),
             (
-                S3liKeyEvent::new(vec![(
-                    crossterm::event::KeyCode::Char('j'),
-                    KeyModifiers::NONE,
-                )]),
+                S3liKeyEvent::new(vec![
+                    (crossterm::event::KeyCode::Char('j'), KeyModifiers::NONE),
+                    (crossterm::event::KeyCode::Down, KeyModifiers::NONE),
+                ]),
                 Self::move_down,
             ),
             (
