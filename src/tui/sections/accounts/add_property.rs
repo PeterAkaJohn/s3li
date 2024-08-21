@@ -1,12 +1,16 @@
+use crossterm::event::KeyModifiers;
 use ratatui::{
     layout::{Constraint, Layout},
     widgets::Clear,
 };
 
-use crate::tui::components::{
-    input::InputBlock,
-    popup::WithPopup,
-    traits::{Component, ComponentProps, WithContainer},
+use crate::tui::{
+    components::{
+        input::InputBlock,
+        popup::WithPopup,
+        traits::{Component, ComponentProps, WithContainer},
+    },
+    key_event::{EventListeners, ExecuteEventListener, S3liEventWithReaction, S3liKeyEvent},
 };
 
 enum Selected {
@@ -19,6 +23,7 @@ pub struct AddProperty {
     value: String,
     open: bool,
     selected: Selected,
+    listeners: Vec<EventListeners<Self>>,
 }
 
 impl AddProperty {
@@ -28,6 +33,7 @@ impl AddProperty {
             value: Default::default(),
             open: false,
             selected: Selected::Name,
+            listeners: Self::register_listeners(),
         }
     }
 
@@ -44,6 +50,49 @@ impl AddProperty {
         self.value = Default::default();
         new_property
     }
+
+    fn register_listeners() -> Vec<EventListeners<Self>> {
+        vec![
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Esc, KeyModifiers::NONE)]),
+                Self::exit_component,
+            )),
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Tab, KeyModifiers::NONE)]),
+                Self::toggle_selected,
+            )),
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![(
+                    crossterm::event::KeyCode::Backspace,
+                    KeyModifiers::NONE,
+                )]),
+                Self::delete_char_from_selected,
+            )),
+            EventListeners::EventWithReaction((
+                S3liEventWithReaction::new(),
+                Self::add_char_to_selected,
+            )),
+        ]
+    }
+
+    fn exit_component(&mut self) {
+        self.close_popup();
+    }
+
+    fn delete_char_from_selected(&mut self) {
+        match self.selected {
+            Selected::Name => self.name.pop(),
+            Selected::Value => self.value.pop(),
+        };
+    }
+    fn add_char_to_selected(&mut self, val: Option<char>) {
+        if let Some(character) = val {
+            match self.selected {
+                Selected::Name => self.name.push(character),
+                Selected::Value => self.value.push(character),
+            };
+        }
+    }
 }
 
 impl WithPopup for AddProperty {
@@ -58,33 +107,15 @@ impl WithPopup for AddProperty {
 
 impl WithContainer<'_> for AddProperty {}
 
+impl ExecuteEventListener for AddProperty {
+    fn get_event_listeners(&self) -> &Vec<EventListeners<Self>> {
+        &self.listeners
+    }
+}
+
 impl Component for AddProperty {
     fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
-        //esc closes, tab switches between name and value, rest of value are for writing value
-        match key.code {
-            crossterm::event::KeyCode::Esc => {
-                self.close_popup();
-            }
-            crossterm::event::KeyCode::Tab => {
-                self.toggle_selected();
-            }
-            crossterm::event::KeyCode::Backspace => {
-                match self.selected {
-                    Selected::Name => self.name.pop(),
-                    Selected::Value => self.value.pop(),
-                };
-            }
-            crossterm::event::KeyCode::Char(character) => {
-                match self.selected {
-                    Selected::Name => self.name.push(character),
-                    Selected::Value => self.value.push(character),
-                };
-            }
-            crossterm::event::KeyCode::Enter => {
-                //something that I need to figure out
-            }
-            _ => {}
-        }
+        self.execute(key);
     }
 
     fn render(
