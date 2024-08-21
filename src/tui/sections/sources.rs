@@ -8,14 +8,14 @@ use crate::{
             list::ListComponent,
             traits::{Component, ComponentProps},
         },
-        key_event::{ExecuteEventListener, S3liEventListener, S3liKeyEvent},
+        key_event::{EventListeners, ExecuteEventListener, S3liKeyEvent},
     },
 };
 
 pub struct Sources {
     component: ListComponent<String>,
     ui_tx: UnboundedSender<Action>,
-    listeners: Vec<S3liEventListener<Self>>,
+    listeners: Vec<EventListeners<Self>>,
 }
 
 impl Sources {
@@ -35,11 +35,11 @@ impl Sources {
         }
     }
 
-    fn register_listeners() -> Vec<S3liEventListener<Self>> {
-        vec![(
+    fn register_listeners() -> Vec<EventListeners<Self>> {
+        vec![EventListeners::KeyEvent((
             S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)]),
             Self::enter_pressed,
-        )]
+        ))]
     }
 
     fn enter_pressed(&mut self) {
@@ -50,7 +50,7 @@ impl Sources {
 }
 
 impl ExecuteEventListener for Sources {
-    fn get_event_listeners(&self) -> &Vec<S3liEventListener<Self>> {
+    fn get_event_listeners(&self) -> &Vec<EventListeners<Self>> {
         &self.listeners
     }
 }

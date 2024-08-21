@@ -26,7 +26,7 @@ use crate::{
                 WithContainer, WithList, WithMultiSelection,
             },
         },
-        key_event::{ExecuteEventListener, S3liEventListener, S3liKeyEvent},
+        key_event::{EventListeners, ExecuteEventListener, S3liKeyEvent},
     },
 };
 
@@ -40,7 +40,7 @@ pub struct Explorer {
     download_component: Download,
     mode: ListMode,
     selection: Vec<usize>,
-    listeners: Vec<S3liEventListener<Self>>,
+    listeners: Vec<EventListeners<Self>>,
 }
 
 impl Explorer {
@@ -89,51 +89,51 @@ impl Explorer {
         self.current_folder_idx = active_idx;
     }
 
-    fn register_listeners() -> Vec<S3liEventListener<Self>> {
+    fn register_listeners() -> Vec<EventListeners<Self>> {
         vec![
-            (
+            EventListeners::KeyEvent((
                 S3liKeyEvent::new(vec![(
                     crossterm::event::KeyCode::Char(' '),
                     KeyModifiers::NONE,
                 )]),
                 Self::select_multi,
-            ),
-            (
+            )),
+            EventListeners::KeyEvent((
                 S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Esc, KeyModifiers::NONE)]),
                 Self::cancel,
-            ),
-            (
+            )),
+            EventListeners::KeyEvent((
                 S3liKeyEvent::new(vec![(
                     crossterm::event::KeyCode::Char('v'),
                     KeyModifiers::NONE,
                 )]),
                 Self::visual_block,
-            ),
-            (
+            )),
+            EventListeners::KeyEvent((
                 S3liKeyEvent::new(vec![
                     (crossterm::event::KeyCode::Char('k'), KeyModifiers::NONE),
                     (crossterm::event::KeyCode::Up, KeyModifiers::NONE),
                 ]),
                 Self::move_up,
-            ),
-            (
+            )),
+            EventListeners::KeyEvent((
                 S3liKeyEvent::new(vec![
                     (crossterm::event::KeyCode::Char('j'), KeyModifiers::NONE),
                     (crossterm::event::KeyCode::Down, KeyModifiers::NONE),
                 ]),
                 Self::move_down,
-            ),
-            (
+            )),
+            EventListeners::KeyEvent((
                 S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)]),
                 Self::confirm_selection,
-            ),
-            (
+            )),
+            EventListeners::KeyEvent((
                 S3liKeyEvent::new(vec![(
                     crossterm::event::KeyCode::Char('d'),
                     KeyModifiers::NONE,
                 )]),
                 Self::init_download,
-            ),
+            )),
         ]
     }
 
@@ -278,7 +278,7 @@ impl WithMultiSelection for Explorer {
 }
 
 impl ExecuteEventListener for Explorer {
-    fn get_event_listeners(&self) -> &Vec<S3liEventListener<Self>> {
+    fn get_event_listeners(&self) -> &Vec<EventListeners<Self>> {
         &self.listeners
     }
 }

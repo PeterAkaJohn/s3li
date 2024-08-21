@@ -2,7 +2,7 @@ mod add_property;
 mod edit;
 mod region;
 
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::KeyModifiers;
 use edit::EditAccount;
 use region::Region;
 use tokio::sync::mpsc::UnboundedSender;
@@ -17,7 +17,7 @@ use crate::{
             popup::WithPopup,
             traits::{Component, ComponentProps, WithList},
         },
-        key_event::{ExecuteEventListener, S3liEventListener, S3liKeyEvent},
+        key_event::{EventListeners, ExecuteEventListener, S3liKeyEvent},
     },
 };
 
@@ -27,7 +27,7 @@ pub struct Accounts {
     edit_popup: EditAccount,
     region_popup: Region,
     ui_tx: UnboundedSender<Action>,
-    listeners: Vec<S3liEventListener<Self>>,
+    listeners: Vec<EventListeners<Self>>,
 }
 
 impl Accounts {
@@ -55,26 +55,26 @@ impl Accounts {
         self.edit_popup.is_popup_open() || self.region_popup.is_popup_open()
     }
 
-    fn register_listeners() -> Vec<S3liEventListener<Self>> {
+    fn register_listeners() -> Vec<EventListeners<Self>> {
         vec![
-            (
+            EventListeners::KeyEvent((
                 S3liKeyEvent::new(vec![(
                     crossterm::event::KeyCode::Char('e'),
                     KeyModifiers::NONE,
                 )]),
                 Self::edit_properties,
-            ),
-            (
+            )),
+            EventListeners::KeyEvent((
                 S3liKeyEvent::new(vec![(
                     crossterm::event::KeyCode::Char('r'),
                     KeyModifiers::NONE,
                 )]),
                 Self::edit_region,
-            ),
-            (
+            )),
+            EventListeners::KeyEvent((
                 S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)]),
                 Self::confirm_selection,
-            ),
+            )),
         ]
     }
 
@@ -103,7 +103,7 @@ impl Accounts {
 }
 
 impl ExecuteEventListener for Accounts {
-    fn get_event_listeners(&self) -> &Vec<S3liEventListener<Self>> {
+    fn get_event_listeners(&self) -> &Vec<EventListeners<Self>> {
         &self.listeners
     }
 }
