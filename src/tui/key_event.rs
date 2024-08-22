@@ -7,23 +7,22 @@ pub struct S3liKeyEvent {
     input: Vec<(KeyCode, KeyModifiers)>,
 }
 #[derive(Debug)]
-pub struct S3liEventWithReaction {}
+pub struct S3liOnChangeEvent {}
 
 pub type S3liEventListener<T> = (S3liKeyEvent, fn(&mut T));
-pub type S3liWithReactionEventListener<T> =
-    (S3liEventWithReaction, fn(&mut T, value: Option<char>));
+pub type S3liOnChangeEventListener<T> = (S3liOnChangeEvent, fn(&mut T, value: char), fn(&mut T));
 
 #[derive(Debug)]
 pub enum EventListeners<T> {
     KeyEvent(S3liEventListener<T>),
-    EventWithReaction(S3liWithReactionEventListener<T>),
+    OnChangeEvent(S3liOnChangeEventListener<T>),
 }
 
 impl<T> EventListeners<T> {
     pub fn is_equal(&self, key_event: KeyEvent) -> bool {
         match self {
             EventListeners::KeyEvent(event) => event.0.is_equal(key_event),
-            EventListeners::EventWithReaction(event) => event.0.is_equal(key_event),
+            EventListeners::OnChangeEvent(event) => event.0.is_equal(key_event),
         }
     }
 }
@@ -39,13 +38,13 @@ impl S3liKeyEvent {
             .any(|(code, modifiers)| *code == key_event.code && *modifiers == key_event.modifiers)
     }
 }
-impl S3liEventWithReaction {
+impl S3liOnChangeEvent {
     pub fn new() -> Self {
         Self {}
     }
 
     pub fn is_equal(&self, key_event: KeyEvent) -> bool {
-        matches!(key_event.code, KeyCode::Char(_))
+        matches!(key_event.code, KeyCode::Char(_) | KeyCode::Backspace)
     }
 }
 
@@ -62,9 +61,11 @@ where
         {
             match actual_event {
                 EventListeners::KeyEvent((_, listener)) => listener(self),
-                EventListeners::EventWithReaction((_, listener)) => {
+                EventListeners::OnChangeEvent((_, add, delete)) => {
                     if let KeyCode::Char(val) = event.code {
-                        listener(self, Some(val))
+                        add(self, val)
+                    } else if matches!(event.code, KeyCode::Backspace) {
+                        delete(self)
                     }
                 }
             }

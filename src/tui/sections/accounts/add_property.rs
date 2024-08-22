@@ -10,7 +10,7 @@ use crate::tui::{
         popup::WithPopup,
         traits::{Component, ComponentProps, WithContainer},
     },
-    key_event::{EventListeners, ExecuteEventListener, S3liEventWithReaction, S3liKeyEvent},
+    key_event::{EventListeners, ExecuteEventListener, S3liKeyEvent, S3liOnChangeEvent},
 };
 
 enum Selected {
@@ -68,9 +68,10 @@ impl AddProperty {
                 )]),
                 Self::delete_char_from_selected,
             )),
-            EventListeners::EventWithReaction((
-                S3liEventWithReaction::new(),
+            EventListeners::OnChangeEvent((
+                S3liOnChangeEvent::new(),
                 Self::add_char_to_selected,
+                Self::delete_char_from_selected,
             )),
         ]
     }
@@ -85,13 +86,11 @@ impl AddProperty {
             Selected::Value => self.value.pop(),
         };
     }
-    fn add_char_to_selected(&mut self, val: Option<char>) {
-        if let Some(character) = val {
-            match self.selected {
-                Selected::Name => self.name.push(character),
-                Selected::Value => self.value.push(character),
-            };
-        }
+    fn add_char_to_selected(&mut self, value: char) {
+        match self.selected {
+            Selected::Name => self.name.push(value),
+            Selected::Value => self.value.push(value),
+        };
     }
 }
 
