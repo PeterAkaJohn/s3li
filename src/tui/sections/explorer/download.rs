@@ -1,5 +1,6 @@
 use std::ops::Add;
 
+use crossterm::event::KeyModifiers;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Margin},
     widgets::{block::Title, Clear},
@@ -9,10 +10,13 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::{
     action::Action,
     store::explorer::TreeItem,
-    tui::components::{
-        input::Input,
-        popup::WithPopup,
-        traits::{Component, ComponentProps, WithContainer},
+    tui::{
+        components::{
+            input::Input,
+            popup::WithPopup,
+            traits::{Component, ComponentProps, WithContainer},
+        },
+        key_event::{EventListeners, ExecuteEventListener, S3liKeyEvent, S3liOnChangeEvent},
     },
 };
 
@@ -22,6 +26,7 @@ pub struct Download {
     pub items: Vec<TreeItem>,
     ui_tx: UnboundedSender<Action>,
     current_file_idx: usize,
+    listeners: Vec<EventListeners<Self>>,
 }
 
 impl Download {
@@ -31,12 +36,61 @@ impl Download {
             open: false,
             items: vec![],
             current_file_idx: 0,
+            listeners: Self::register_listeners(),
         }
     }
 
     pub fn init(&mut self, tree_items: Vec<TreeItem>) {
         self.items = tree_items;
         self.open = true;
+    }
+
+    fn register_listeners() -> Vec<EventListeners<Self>> {
+        vec![
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Esc, KeyModifiers::NONE)]),
+                Self::exit_component,
+            )),
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)]),
+                Self::confirm,
+            )),
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Tab, KeyModifiers::NONE)]),
+                Self::cycle_current_file,
+            )),
+            EventListeners::OnChangeEvent((
+                S3liOnChangeEvent::new(),
+                Self::add_char,
+                Self::delete_char,
+            )),
+        ]
+    }
+
+    fn exit_component(&mut self) {
+        self.open = false;
+    }
+    fn confirm(&mut self) {
+        // send region to state with ui_tx
+        let _ = self.ui_tx.send(Action::Download(self.items.clone()));
+        self.open = false;
+    }
+    fn cycle_current_file(&mut self) {
+        self.current_file_idx = if self.current_file_idx == self.items.len() - 1 {
+            0
+        } else {
+            self.current_file_idx.add(1)
+        };
+    }
+    fn delete_char(&mut self) {
+        if let Some(item) = self.items.get_mut(self.current_file_idx) {
+            item.pop_name_char();
+        }
+    }
+    fn add_char(&mut self, value: char) {
+        if let Some(item) = self.items.get_mut(self.current_file_idx) {
+            item.push_name_char(value);
+        }
     }
 }
 
@@ -51,6 +105,12 @@ impl WithPopup for Download {
 }
 
 impl WithContainer<'_> for Download {}
+
+impl ExecuteEventListener for Download {
+    fn get_event_listeners(&self) -> &Vec<EventListeners<Self>> {
+        &self.listeners
+    }
+}
 
 impl Component for Download {
     fn render(
@@ -92,34 +152,6 @@ impl Component for Download {
         }
     }
     fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
-        match key.code {
-            crossterm::event::KeyCode::Esc => {
-                self.open = false;
-            }
-            crossterm::event::KeyCode::Enter => {
-                // send region to state with ui_tx
-                let _ = self.ui_tx.send(Action::Download(self.items.clone()));
-                self.open = false;
-            }
-            crossterm::event::KeyCode::Tab => {
-                self.current_file_idx = if self.current_file_idx == self.items.len() - 1 {
-                    0
-                } else {
-                    self.current_file_idx.add(1)
-                };
-            }
-            crossterm::event::KeyCode::Backspace => {
-                // send region to state with ui_tx
-                if let Some(item) = self.items.get_mut(self.current_file_idx) {
-                    item.pop_name_char();
-                }
-            }
-            crossterm::event::KeyCode::Char(value) => {
-                if let Some(item) = self.items.get_mut(self.current_file_idx) {
-                    item.push_name_char(value);
-                }
-            }
-            _ => {}
-        }
+        self.execute(key)
     }
 }
