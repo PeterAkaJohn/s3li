@@ -163,17 +163,9 @@ impl Component for Dashboard {
                 | crossterm::event::KeyCode::Right
                 | crossterm::event::KeyCode::Char('h')
                 | crossterm::event::KeyCode::Char('l') => self.change_selected_component(),
-                crossterm::event::KeyCode::Enter => {
-                    self.sources.handle_key_events(key);
-                }
                 _ => self.sources.handle_key_events(key),
             },
-            DashboardComponents::Explorer => match keycode {
-                crossterm::event::KeyCode::Esc => {
-                    self.explorer.handle_key_events(key);
-                }
-                _ => self.explorer.handle_key_events(key),
-            },
+            DashboardComponents::Explorer => self.explorer.handle_key_events(key),
             DashboardComponents::Accounts => match keycode {
                 crossterm::event::KeyCode::Left
                 | crossterm::event::KeyCode::Right
