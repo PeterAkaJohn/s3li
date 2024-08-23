@@ -1,6 +1,5 @@
 use anyhow::Result;
 use crossterm::event::KeyEvent;
-use futures::SinkExt;
 use ratatui::{
     layout::{self, Rect},
     style::{self, Stylize},

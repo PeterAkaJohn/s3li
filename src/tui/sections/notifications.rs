@@ -11,7 +11,7 @@ use crate::{
         types::{Notification, NotificationType},
         Notifications,
     },
-    tui::components::traits::{Component, ComponentProps, WithContainer},
+    tui::components::traits::{Component, ComponentProps},
 };
 
 pub struct NotificationsUI {
@@ -40,8 +40,6 @@ impl NotificationsUI {
         self.alert = alert;
     }
 }
-
-impl WithContainer<'_> for NotificationsUI {}
 
 impl Component for NotificationsUI {
     fn render(

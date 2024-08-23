@@ -1,6 +1,6 @@
 mod download;
 
-use crossterm::event::KeyEventKind;
+use crossterm::event::{KeyEventKind, KeyModifiers};
 use download::Download;
 use ratatui::{
     style::{Color, Style},
@@ -16,14 +16,17 @@ use crate::{
         explorer::{FileTree, Folder, TreeItem},
         state::DashboardComponents,
     },
-    tui::components::{
-        functions::add_white_space_till_width_if_needed,
-        list::ListMode,
-        popup::WithPopup,
-        traits::{
-            Component, ComponentProps, Selection, SelectionDirection, WithBlockSelection,
-            WithContainer, WithList, WithMultiSelection,
+    tui::{
+        components::{
+            functions::add_white_space_till_width_if_needed,
+            list::ListMode,
+            popup::WithPopup,
+            traits::{
+                Component, ComponentProps, Selection, SelectionDirection, WithBlockSelection,
+                WithContainer, WithList, WithMultiSelection,
+            },
         },
+        key_event::{EventListeners, ExecuteEventListener, S3liKeyEvent},
     },
 };
 
@@ -37,6 +40,7 @@ pub struct Explorer {
     download_component: Download,
     mode: ListMode,
     selection: Vec<usize>,
+    listeners: Vec<EventListeners<Self>>,
 }
 
 impl Explorer {
@@ -78,10 +82,148 @@ impl Explorer {
             download_component: Download::new(ui_tx.clone()),
             selection: vec![],
             mode: ListMode::Normal,
+            listeners: Self::register_listeners(),
         }
     }
     pub fn set_active_idx(&mut self, active_idx: Option<usize>) {
         self.current_folder_idx = active_idx;
+    }
+
+    fn register_listeners() -> Vec<EventListeners<Self>> {
+        vec![
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![(
+                    crossterm::event::KeyCode::Char(' '),
+                    KeyModifiers::NONE,
+                )]),
+                Self::select_multi,
+            )),
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Esc, KeyModifiers::NONE)]),
+                Self::cancel,
+            )),
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![(
+                    crossterm::event::KeyCode::Char('v'),
+                    KeyModifiers::NONE,
+                )]),
+                Self::visual_block,
+            )),
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![
+                    (crossterm::event::KeyCode::Char('k'), KeyModifiers::NONE),
+                    (crossterm::event::KeyCode::Up, KeyModifiers::NONE),
+                ]),
+                Self::move_up,
+            )),
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![
+                    (crossterm::event::KeyCode::Char('j'), KeyModifiers::NONE),
+                    (crossterm::event::KeyCode::Down, KeyModifiers::NONE),
+                ]),
+                Self::move_down,
+            )),
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)]),
+                Self::confirm_selection,
+            )),
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![(
+                    crossterm::event::KeyCode::Char('d'),
+                    KeyModifiers::NONE,
+                )]),
+                Self::init_download,
+            )),
+        ]
+    }
+
+    fn select_multi(&mut self) {
+        self.mode = ListMode::Multi;
+        let current_idx = self.get_list_state_selected();
+        if let Some(idx) = current_idx {
+            self.toggle_selection(idx);
+        }
+        if self.selection.is_empty() {
+            self.mode = ListMode::Normal;
+        }
+        LOGGER.info(&format!("selection: {:?}", self.selection));
+    }
+    fn cancel(&mut self) {
+        if matches!(self.mode, ListMode::Selection | ListMode::Multi) {
+            self.end_selection();
+        } else {
+            self.unselect();
+            self.set_active_idx(None);
+            let _ = self
+                .ui_tx
+                .send(Action::SetSelectedComponent(DashboardComponents::Sources));
+        }
+    }
+    fn visual_block(&mut self) {
+        if matches!(self.mode, ListMode::Normal) {
+            let current_idx = self.get_list_state_selected();
+            if let Some(idx) = current_idx {
+                self.start_selection(idx);
+            }
+        } else {
+            self.end_selection();
+        }
+    }
+    fn confirm_selection(&mut self) {
+        let selected_idx = self.get_list_state_selected();
+        self.set_active_idx(selected_idx);
+        let selected_item = selected_idx.and_then(|idx| self.file_tree.get(idx));
+        if let Some(tree_item) = selected_item {
+            match tree_item {
+                TreeItem::Folder(_, _) => self
+                    .ui_tx
+                    .send(Action::SetExplorerFolder(tree_item.clone()))
+                    .expect("should not fail"),
+                TreeItem::File(_, _) => {}
+            }
+        };
+    }
+    fn move_up(&mut self) {
+        if matches!(self.mode, ListMode::Selection) {
+            self.resize_selection(SelectionDirection::Up);
+        } else {
+            self.select_previous();
+        }
+    }
+    fn move_down(&mut self) {
+        if matches!(self.mode, ListMode::Selection) {
+            self.resize_selection(SelectionDirection::Down);
+        } else {
+            self.select_next();
+        }
+    }
+    fn init_download(&mut self) {
+        let files = match self.mode {
+            ListMode::Normal => {
+                let selected_idx = self.get_list_state_selected();
+                let selected_item = selected_idx.and_then(|idx| self.file_tree.get(idx));
+                if let Some(tree_item) = selected_item {
+                    vec![tree_item.clone()]
+                } else {
+                    vec![]
+                }
+            }
+            _ => {
+                let files_idx = &self.selection;
+                self.file_tree
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, tree_item)| {
+                        if files_idx.contains(&idx) {
+                            Some(tree_item.clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<_>>()
+            }
+        };
+        self.download_component.init(files);
     }
 }
 
@@ -135,6 +277,12 @@ impl WithMultiSelection for Explorer {
     }
 }
 
+impl ExecuteEventListener for Explorer {
+    fn get_event_listeners(&self) -> &Vec<EventListeners<Self>> {
+        &self.listeners
+    }
+}
+
 impl Component for Explorer {
     fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
         if key.kind != KeyEventKind::Press {
@@ -147,98 +295,7 @@ impl Component for Explorer {
             self.download_component.handle_key_events(key);
             return;
         }
-        match key.code {
-            crossterm::event::KeyCode::Char(' ') => {
-                self.mode = ListMode::Multi;
-                let current_idx = self.get_list_state_selected();
-                if let Some(idx) = current_idx {
-                    self.toggle_selection(idx);
-                }
-                if self.selection.is_empty() {
-                    self.mode = ListMode::Normal;
-                }
-                LOGGER.info(&format!("selection: {:?}", self.selection));
-            }
-            crossterm::event::KeyCode::Esc
-                if matches!(self.mode, ListMode::Selection | ListMode::Multi) =>
-            {
-                self.end_selection();
-            }
-            crossterm::event::KeyCode::Char('v') => {
-                if matches!(self.mode, ListMode::Normal) {
-                    let current_idx = self.get_list_state_selected();
-                    if let Some(idx) = current_idx {
-                        self.start_selection(idx);
-                    }
-                } else {
-                    self.end_selection();
-                }
-            }
-            crossterm::event::KeyCode::Enter => {
-                let selected_idx = self.get_list_state_selected();
-                self.set_active_idx(selected_idx);
-                let selected_item = selected_idx.and_then(|idx| self.file_tree.get(idx));
-                if let Some(tree_item) = selected_item {
-                    match tree_item {
-                        TreeItem::Folder(_, _) => self
-                            .ui_tx
-                            .send(Action::SetExplorerFolder(tree_item.clone()))
-                            .expect("should not fail"),
-                        TreeItem::File(_, _) => {}
-                    }
-                };
-            }
-            crossterm::event::KeyCode::Esc => {
-                self.unselect();
-                self.set_active_idx(None);
-                let _ = self
-                    .ui_tx
-                    .send(Action::SetSelectedComponent(DashboardComponents::Sources));
-            }
-            crossterm::event::KeyCode::Up | crossterm::event::KeyCode::Char('k') => {
-                if matches!(self.mode, ListMode::Selection) {
-                    self.resize_selection(SelectionDirection::Up);
-                } else {
-                    self.select_previous();
-                }
-            }
-            crossterm::event::KeyCode::Down | crossterm::event::KeyCode::Char('j') => {
-                if matches!(self.mode, ListMode::Selection) {
-                    self.resize_selection(SelectionDirection::Down);
-                } else {
-                    self.select_next();
-                }
-            }
-            crossterm::event::KeyCode::Char('d') => {
-                let files = match self.mode {
-                    ListMode::Normal => {
-                        let selected_idx = self.get_list_state_selected();
-                        let selected_item = selected_idx.and_then(|idx| self.file_tree.get(idx));
-                        if let Some(tree_item) = selected_item {
-                            vec![tree_item.clone()]
-                        } else {
-                            vec![]
-                        }
-                    }
-                    _ => {
-                        let files_idx = &self.selection;
-                        self.file_tree
-                            .iter()
-                            .enumerate()
-                            .filter_map(|(idx, tree_item)| {
-                                if files_idx.contains(&idx) {
-                                    Some(tree_item.clone())
-                                } else {
-                                    None
-                                }
-                            })
-                            .collect::<Vec<_>>()
-                    }
-                };
-                self.download_component.init(files);
-            }
-            _ => {}
-        };
+        self.execute(key);
     }
 
     fn render(

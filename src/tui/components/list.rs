@@ -1,6 +1,4 @@
-use std::usize;
-
-use crossterm::event::KeyEventKind;
+use crossterm::event::{KeyEventKind, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Style},
@@ -8,7 +6,13 @@ use ratatui::{
     widgets::{List, ListItem, ListState, Paragraph},
 };
 
-use crate::{logger::LOGGER, tui::components::functions::add_white_space_till_width_if_needed};
+use crate::{
+    logger::LOGGER,
+    tui::{
+        components::functions::add_white_space_till_width_if_needed,
+        key_event::{EventListeners, ExecuteEventListener, S3liKeyEvent},
+    },
+};
 
 use super::traits::{
     Component, ComponentProps, Selection, SelectionDirection, WithBlockSelection, WithContainer,
@@ -29,6 +33,7 @@ pub struct ListComponent<T> {
     active_idx: Option<usize>,
     selection: Vec<usize>,
     mode: ListMode,
+    listeners: Vec<EventListeners<Self>>,
 }
 
 impl ListComponent<String> {
@@ -50,6 +55,7 @@ impl ListComponent<String> {
             active_idx,
             selection: vec![],
             mode: ListMode::Normal,
+            listeners: Self::register_listeners(),
         }
     }
     pub fn set_active_idx(&mut self, active_idx: Option<usize>) {
@@ -64,6 +70,99 @@ impl ListComponent<String> {
         self.items
             .get(self.list_state.selected().expect("should always be valid"))
             .expect("should always exist")
+    }
+
+    fn register_listeners() -> Vec<EventListeners<Self>> {
+        vec![
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![(
+                    crossterm::event::KeyCode::Char(' '),
+                    KeyModifiers::NONE,
+                )]),
+                Self::select_multi,
+            )),
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Esc, KeyModifiers::NONE)]),
+                Self::cancel,
+            )),
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![(
+                    crossterm::event::KeyCode::Char('v'),
+                    KeyModifiers::NONE,
+                )]),
+                Self::visual_block,
+            )),
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![
+                    (crossterm::event::KeyCode::Char('k'), KeyModifiers::NONE),
+                    (crossterm::event::KeyCode::Up, KeyModifiers::NONE),
+                ]),
+                Self::move_up,
+            )),
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![
+                    (crossterm::event::KeyCode::Char('j'), KeyModifiers::NONE),
+                    (crossterm::event::KeyCode::Down, KeyModifiers::NONE),
+                ]),
+                Self::move_down,
+            )),
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)]),
+                Self::confirm_selection,
+            )),
+        ]
+    }
+
+    fn select_multi(&mut self) {
+        self.mode = ListMode::Multi;
+        let current_idx = self.get_list_state_selected();
+        if let Some(idx) = current_idx {
+            self.toggle_selection(idx);
+        }
+        if self.selection.is_empty() {
+            self.mode = ListMode::Normal;
+        }
+        let _ = LOGGER.info(&format!("selection: {:?}", self.selection));
+    }
+
+    fn cancel(&mut self) {
+        if matches!(self.mode, ListMode::Selection | ListMode::Multi) {
+            self.end_selection();
+        } else {
+            self.unselect();
+            self.set_active_idx(None);
+        }
+    }
+
+    fn visual_block(&mut self) {
+        if matches!(self.mode, ListMode::Normal) {
+            let current_idx = self.get_list_state_selected();
+            if let Some(idx) = current_idx {
+                self.start_selection(idx);
+            }
+        } else {
+            self.end_selection();
+        }
+    }
+
+    fn move_up(&mut self) {
+        if matches!(self.mode, ListMode::Selection) {
+            self.resize_selection(SelectionDirection::Up);
+        } else {
+            self.select_previous();
+        }
+    }
+
+    fn move_down(&mut self) {
+        if matches!(self.mode, ListMode::Selection) {
+            self.resize_selection(SelectionDirection::Down);
+        } else {
+            self.select_next();
+        }
+    }
+
+    fn confirm_selection(&mut self) {
+        self.set_active_idx(self.get_list_state_selected());
     }
 }
 
@@ -114,6 +213,13 @@ impl WithMultiSelection for ListComponent<String> {
         self.selection = selection;
     }
 }
+
+impl ExecuteEventListener for ListComponent<String> {
+    fn get_event_listeners(&self) -> &Vec<EventListeners<Self>> {
+        &self.listeners
+    }
+}
+
 impl Component for ListComponent<String> {
     fn render(
         &mut self,
@@ -187,56 +293,7 @@ impl Component for ListComponent<String> {
         if self.items.is_empty() {
             return;
         }
-        match key.code {
-            crossterm::event::KeyCode::Char(' ') => {
-                self.mode = ListMode::Multi;
-                let current_idx = self.get_list_state_selected();
-                if let Some(idx) = current_idx {
-                    self.toggle_selection(idx);
-                }
-                if self.selection.is_empty() {
-                    self.mode = ListMode::Normal;
-                }
-                LOGGER.info(&format!("selection: {:?}", self.selection));
-            }
-            crossterm::event::KeyCode::Esc
-                if matches!(self.mode, ListMode::Selection | ListMode::Multi) =>
-            {
-                self.end_selection();
-            }
-            crossterm::event::KeyCode::Char('v') => {
-                if matches!(self.mode, ListMode::Normal) {
-                    let current_idx = self.get_list_state_selected();
-                    if let Some(idx) = current_idx {
-                        self.start_selection(idx);
-                    }
-                } else {
-                    self.end_selection();
-                }
-            }
-            crossterm::event::KeyCode::Esc => {
-                self.unselect();
-                self.set_active_idx(None);
-            }
-            crossterm::event::KeyCode::Up | crossterm::event::KeyCode::Char('k') => {
-                if matches!(self.mode, ListMode::Selection) {
-                    self.resize_selection(SelectionDirection::Up);
-                } else {
-                    self.select_previous();
-                }
-            }
-            crossterm::event::KeyCode::Down | crossterm::event::KeyCode::Char('j') => {
-                if matches!(self.mode, ListMode::Selection) {
-                    self.resize_selection(SelectionDirection::Down);
-                } else {
-                    self.select_next();
-                }
-            }
-            crossterm::event::KeyCode::Enter => {
-                self.set_active_idx(self.get_list_state_selected());
-            }
-            _ => {}
-        };
+        self.execute(key)
     }
 }
 

@@ -10,11 +10,13 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
     action::Action,
-    logger::LOGGER,
-    tui::components::{
-        input::InputBlock,
-        popup::WithPopup,
-        traits::{Component, ComponentProps, WithContainer},
+    tui::{
+        components::{
+            input::InputBlock,
+            popup::WithPopup,
+            traits::{Component, ComponentProps, WithContainer},
+        },
+        key_event::{EventListeners, ExecuteEventListener, S3liKeyEvent, S3liOnChangeEvent},
     },
 };
 
@@ -28,6 +30,7 @@ pub struct EditAccount {
     selected_idx: usize,
     ui_tx: UnboundedSender<Action>,
     add_property: AddProperty,
+    listeners: Vec<EventListeners<Self>>,
 }
 
 impl EditAccount {
@@ -40,6 +43,7 @@ impl EditAccount {
             ui_tx: ui_tx.clone(),
             selected_idx: 0,
             add_property: AddProperty::new(),
+            listeners: Self::register_listeners(),
         }
     }
 
@@ -62,6 +66,82 @@ impl EditAccount {
             .collect::<Vec<(String, Option<String>)>>();
         self.selected_idx = 0;
     }
+
+    fn register_listeners() -> Vec<EventListeners<Self>> {
+        vec![
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![(
+                    crossterm::event::KeyCode::Char('a'),
+                    KeyModifiers::CONTROL | KeyModifiers::SHIFT,
+                )]),
+                Self::open_add_property,
+            )),
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Esc, KeyModifiers::NONE)]),
+                Self::exit_component,
+            )),
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)]),
+                Self::confirm,
+            )),
+            EventListeners::KeyEvent((
+                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Tab, KeyModifiers::NONE)]),
+                Self::cycle_properties,
+            )),
+            EventListeners::OnChangeEvent((
+                S3liOnChangeEvent::new(),
+                Self::add_char,
+                Self::delete_char,
+            )),
+        ]
+    }
+
+    fn open_add_property(&mut self) {
+        if !self.add_property.is_popup_open() {
+            self.add_property.open_popup();
+        }
+    }
+    fn exit_component(&mut self) {
+        self.close_popup();
+    }
+    fn confirm(&mut self) {
+        if self.add_property.is_popup_open() {
+            let new_property = self.add_property.get_property_to_add();
+            let _ = self.add_to_properties(new_property);
+            self.add_property.close_popup();
+        } else if !self.new_properties.is_empty() {
+            let new_properties_hash_map = self
+                .new_properties
+                .iter()
+                .map(|(key, value)| (key.to_owned(), value.to_owned()))
+                .collect::<HashMap<String, Option<String>>>();
+            let _ = self.ui_tx.send(Action::EditCredentials(
+                self.account_to_edit.clone().unwrap(),
+                new_properties_hash_map,
+            ));
+        }
+    }
+    fn cycle_properties(&mut self) {
+        if self.selected_idx == self.new_properties.len() - 1 {
+            self.selected_idx = 0;
+        } else {
+            self.selected_idx += 1;
+        }
+    }
+    fn delete_char(&mut self) {
+        if let Some(item) = self.new_properties.get_mut(self.selected_idx) {
+            if let Some(act_val) = item.1.as_mut() {
+                act_val.pop();
+            }
+        }
+    }
+    fn add_char(&mut self, value: char) {
+        if let Some(item) = self.new_properties.get_mut(self.selected_idx) {
+            if let Some(prop) = item.1.as_mut() {
+                prop.push(value)
+            }
+        }
+    }
 }
 
 impl WithContainer<'_> for EditAccount {}
@@ -76,69 +156,19 @@ impl WithPopup for EditAccount {
     }
 }
 
+impl ExecuteEventListener for EditAccount {
+    fn get_event_listeners(&self) -> &Vec<EventListeners<Self>> {
+        &self.listeners
+    }
+}
+
 impl Component for EditAccount {
     fn handle_key_events(&mut self, key: crossterm::event::KeyEvent) {
         if self.add_property.is_popup_open() && matches!(key.code, KeyCode::Enter).not() {
             self.add_property.handle_key_events(key);
             return;
         }
-        if let KeyEvent {
-            code: KeyCode::Char('a'),
-            modifiers: KeyModifiers::CONTROL | KeyModifiers::SHIFT,
-            ..
-        } = key
-        {
-            if !self.add_property.is_popup_open() {
-                self.add_property.open_popup();
-            }
-            return;
-        };
-        match key.code {
-            crossterm::event::KeyCode::Esc => {
-                self.close_popup();
-            }
-            crossterm::event::KeyCode::Tab => {
-                if self.selected_idx == self.new_properties.len() - 1 {
-                    self.selected_idx = 0;
-                } else {
-                    self.selected_idx += 1;
-                }
-            }
-            crossterm::event::KeyCode::Backspace => {
-                if let Some(item) = self.new_properties.get_mut(self.selected_idx) {
-                    if let Some(act_val) = item.1.as_mut() {
-                        act_val.pop();
-                    }
-                }
-            }
-            crossterm::event::KeyCode::Char(character) => {
-                if let Some(item) = self.new_properties.get_mut(self.selected_idx) {
-                    if let Some(value) = item.1.as_mut() {
-                        value.push(character)
-                    }
-                }
-            }
-            crossterm::event::KeyCode::Enter => {
-                if self.add_property.is_popup_open() {
-                    let new_property = self.add_property.get_property_to_add();
-                    self.add_to_properties(new_property);
-                    self.add_property.close_popup();
-                } else if !self.new_properties.is_empty() {
-                    let new_properties_hash_map = self
-                        .new_properties
-                        .iter()
-                        .map(|(key, value)| (key.to_owned(), value.to_owned()))
-                        .collect::<HashMap<String, Option<String>>>();
-                    let _ = self.ui_tx.send(Action::EditCredentials(
-                        self.account_to_edit.clone().unwrap(),
-                        new_properties_hash_map,
-                    ));
-                }
-            }
-            _ => {
-                LOGGER.info(&format!("{:#?}", key.code));
-            }
-        }
+        self.execute(key);
     }
 
     fn render(
