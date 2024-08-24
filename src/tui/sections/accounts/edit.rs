@@ -1,7 +1,7 @@
 use std::{collections::HashMap, ops::Not};
 
 use anyhow::{Ok, Result};
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     widgets::Clear,
@@ -70,22 +70,34 @@ impl EditAccount {
     fn register_listeners() -> Vec<EventListeners<Self>> {
         vec![
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![(
-                    crossterm::event::KeyCode::Char('a'),
-                    KeyModifiers::CONTROL | KeyModifiers::SHIFT,
-                )]),
+                S3liKeyEvent::new(
+                    vec![(
+                        crossterm::event::KeyCode::Char('a'),
+                        KeyModifiers::CONTROL | KeyModifiers::SHIFT,
+                    )],
+                    "Add property: a".into(),
+                ),
                 Self::open_add_property,
             )),
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Esc, KeyModifiers::NONE)]),
+                S3liKeyEvent::new(
+                    vec![(crossterm::event::KeyCode::Esc, KeyModifiers::NONE)],
+                    "Cancel: <Esc>".into(),
+                ),
                 Self::exit_component,
             )),
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)]),
+                S3liKeyEvent::new(
+                    vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)],
+                    "Confirm: <Enter>".into(),
+                ),
                 Self::confirm,
             )),
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Tab, KeyModifiers::NONE)]),
+                S3liKeyEvent::new(
+                    vec![(crossterm::event::KeyCode::Tab, KeyModifiers::NONE)],
+                    "Cycle: <Tab>".into(),
+                ),
                 Self::cycle_properties,
             )),
             EventListeners::OnChangeEvent((

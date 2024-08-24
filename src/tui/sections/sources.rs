@@ -37,7 +37,10 @@ impl Sources {
 
     fn register_listeners() -> Vec<EventListeners<Self>> {
         vec![EventListeners::KeyEvent((
-            S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)]),
+            S3liKeyEvent::new(
+                vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)],
+                "Confirm: <Enter>".into(),
+            ),
             Self::enter_pressed,
         ))]
     }

@@ -58,21 +58,24 @@ impl Accounts {
     fn register_listeners() -> Vec<EventListeners<Self>> {
         vec![
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![(
-                    crossterm::event::KeyCode::Char('e'),
-                    KeyModifiers::NONE,
-                )]),
+                S3liKeyEvent::new(
+                    vec![(crossterm::event::KeyCode::Char('e'), KeyModifiers::NONE)],
+                    "Properties: e".into(),
+                ),
                 Self::edit_properties,
             )),
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![(
-                    crossterm::event::KeyCode::Char('r'),
-                    KeyModifiers::NONE,
-                )]),
+                S3liKeyEvent::new(
+                    vec![(crossterm::event::KeyCode::Char('r'), KeyModifiers::NONE)],
+                    "Region: r".into(),
+                ),
                 Self::edit_region,
             )),
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)]),
+                S3liKeyEvent::new(
+                    vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)],
+                    "Confirm: <Enter>".into(),
+                ),
                 Self::confirm_selection,
             )),
         ]

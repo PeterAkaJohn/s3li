@@ -54,18 +54,24 @@ impl AddProperty {
     fn register_listeners() -> Vec<EventListeners<Self>> {
         vec![
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Esc, KeyModifiers::NONE)]),
+                S3liKeyEvent::new(
+                    vec![(crossterm::event::KeyCode::Esc, KeyModifiers::NONE)],
+                    "Cancel: <Esc>".into(),
+                ),
                 Self::exit_component,
             )),
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Tab, KeyModifiers::NONE)]),
+                S3liKeyEvent::new(
+                    vec![(crossterm::event::KeyCode::Tab, KeyModifiers::NONE)],
+                    "Cycle: <Tab>".into(),
+                ),
                 Self::toggle_selected,
             )),
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![(
-                    crossterm::event::KeyCode::Backspace,
-                    KeyModifiers::NONE,
-                )]),
+                S3liKeyEvent::new(
+                    vec![(crossterm::event::KeyCode::Backspace, KeyModifiers::NONE)],
+                    "Delete: <Backspace>".into(),
+                ),
                 Self::delete_char_from_selected,
             )),
             EventListeners::OnChangeEvent((
