@@ -14,7 +14,7 @@ use crate::{
     tui::{
         components::traits::{Component, ComponentProps},
         sections::{
-            accounts::Accounts, explorer::Explorer, notifications::NotificationsUI,
+            accounts::Accounts, explorer::Explorer, hints::Hints, notifications::NotificationsUI,
             sources::Sources,
         },
     },
@@ -26,6 +26,7 @@ pub struct Dashboard {
     accounts: Accounts,
     explorer: Explorer,
     notifications: NotificationsUI,
+    hints: Hints,
     ui_tx: UnboundedSender<Action>,
     aside_constraints: [Constraint; 2],
 }
@@ -46,12 +47,14 @@ impl Dashboard {
 
         let explorer = Explorer::new(None, None, ui_tx.clone());
         let notifications = NotificationsUI::new(state.notifications.clone(), ui_tx.clone());
+        let hints = Hints::new(vec!["Something".to_string()]);
         Dashboard {
             selected_component: state.selected_component.clone(),
             sources,
             accounts,
             explorer,
             notifications,
+            hints,
             ui_tx,
             aside_constraints: [Constraint::Length(3), Constraint::Fill(1)],
         }
@@ -85,6 +88,7 @@ impl Dashboard {
             } else {
                 [Constraint::Fill(1), Constraint::Length(3)]
             };
+        let hints = Hints::new(vec!["Something".to_string()]);
 
         Dashboard {
             selected_component: state.selected_component.clone(),
@@ -92,6 +96,7 @@ impl Dashboard {
             accounts,
             explorer,
             notifications,
+            hints,
             ui_tx: self.ui_tx,
             aside_constraints,
         }
@@ -103,10 +108,17 @@ impl Dashboard {
 
 impl Component for Dashboard {
     fn render(&mut self, f: &mut ratatui::prelude::Frame, _area: Rect, _: Option<ComponentProps>) {
+        let [dashboard, hints] = *Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Fill(1), Constraint::Length(1)])
+            .split(f.size())
+        else {
+            panic!("layout needs to have 2 chunks")
+        };
         let [aside, main] = *Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(15), Constraint::Percentage(85)])
-            .split(f.size())
+            .split(dashboard)
         else {
             panic!("layout needs to have 2 chunks")
         };
@@ -150,6 +162,7 @@ impl Component for Dashboard {
         );
 
         self.notifications.render(f, notification_section, None);
+        self.hints.render(f, hints, None);
     }
 
     fn handle_key_events(&mut self, key: KeyEvent) {
