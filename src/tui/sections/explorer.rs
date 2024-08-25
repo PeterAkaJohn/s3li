@@ -92,46 +92,58 @@ impl Explorer {
     fn register_listeners() -> Vec<EventListeners<Self>> {
         vec![
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![(
-                    crossterm::event::KeyCode::Char(' '),
-                    KeyModifiers::NONE,
-                )]),
+                S3liKeyEvent::new(
+                    vec![(crossterm::event::KeyCode::Char(' '), KeyModifiers::NONE)],
+                    "Multi Selection: <space>".into(),
+                ),
                 Self::select_multi,
             )),
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Esc, KeyModifiers::NONE)]),
+                S3liKeyEvent::new(
+                    vec![(crossterm::event::KeyCode::Esc, KeyModifiers::NONE)],
+                    "Back: <Esc>".into(),
+                ),
                 Self::cancel,
             )),
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![(
-                    crossterm::event::KeyCode::Char('v'),
-                    KeyModifiers::NONE,
-                )]),
+                S3liKeyEvent::new(
+                    vec![(crossterm::event::KeyCode::Char('v'), KeyModifiers::NONE)],
+                    "Visual: v".into(),
+                ),
                 Self::visual_block,
             )),
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![
-                    (crossterm::event::KeyCode::Char('k'), KeyModifiers::NONE),
-                    (crossterm::event::KeyCode::Up, KeyModifiers::NONE),
-                ]),
+                S3liKeyEvent::new(
+                    vec![
+                        (crossterm::event::KeyCode::Char('k'), KeyModifiers::NONE),
+                        (crossterm::event::KeyCode::Up, KeyModifiers::NONE),
+                    ],
+                    "Move up: k or <Up>".into(),
+                ),
                 Self::move_up,
             )),
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![
-                    (crossterm::event::KeyCode::Char('j'), KeyModifiers::NONE),
-                    (crossterm::event::KeyCode::Down, KeyModifiers::NONE),
-                ]),
+                S3liKeyEvent::new(
+                    vec![
+                        (crossterm::event::KeyCode::Char('j'), KeyModifiers::NONE),
+                        (crossterm::event::KeyCode::Down, KeyModifiers::NONE),
+                    ],
+                    "Move down: j or <Down>".into(),
+                ),
                 Self::move_down,
             )),
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)]),
+                S3liKeyEvent::new(
+                    vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)],
+                    "Confirm: <Enter>".into(),
+                ),
                 Self::confirm_selection,
             )),
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![(
-                    crossterm::event::KeyCode::Char('d'),
-                    KeyModifiers::NONE,
-                )]),
+                S3liKeyEvent::new(
+                    vec![(crossterm::event::KeyCode::Char('d'), KeyModifiers::NONE)],
+                    "Download: d".into(),
+                ),
                 Self::init_download,
             )),
         ]
@@ -224,6 +236,14 @@ impl Explorer {
             }
         };
         self.download_component.init(files);
+    }
+
+    pub fn get_key_event_descriptions(&self) -> Vec<String> {
+        if self.download_component.is_popup_open() {
+            self.download_component.extract_key_event_descriptions()
+        } else {
+            self.extract_key_event_descriptions()
+        }
     }
 }
 

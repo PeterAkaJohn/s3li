@@ -48,15 +48,24 @@ impl Download {
     fn register_listeners() -> Vec<EventListeners<Self>> {
         vec![
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Esc, KeyModifiers::NONE)]),
+                S3liKeyEvent::new(
+                    vec![(crossterm::event::KeyCode::Esc, KeyModifiers::NONE)],
+                    "Cancel: <Esc>".into(),
+                ),
                 Self::exit_component,
             )),
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)]),
+                S3liKeyEvent::new(
+                    vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)],
+                    "Confirm: <Enter>".into(),
+                ),
                 Self::confirm,
             )),
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Tab, KeyModifiers::NONE)]),
+                S3liKeyEvent::new(
+                    vec![(crossterm::event::KeyCode::Tab, KeyModifiers::NONE)],
+                    "Cycle: <Tab>".into(),
+                ),
                 Self::cycle_current_file,
             )),
             EventListeners::OnChangeEvent((

@@ -37,7 +37,10 @@ impl Sources {
 
     fn register_listeners() -> Vec<EventListeners<Self>> {
         vec![EventListeners::KeyEvent((
-            S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)]),
+            S3liKeyEvent::new(
+                vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)],
+                "Confirm: <Enter>".into(),
+            ),
             Self::enter_pressed,
         ))]
     }
@@ -46,6 +49,10 @@ impl Sources {
         if let Some(idx) = self.component.get_active_idx() {
             let _ = self.ui_tx.send(Action::SetSource(idx));
         }
+    }
+
+    pub fn get_key_event_descriptions(&self) -> Vec<String> {
+        self.extract_key_event_descriptions()
     }
 }
 

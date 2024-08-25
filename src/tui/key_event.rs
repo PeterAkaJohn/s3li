@@ -5,6 +5,7 @@ use super::components::traits::Component;
 #[derive(Debug)]
 pub struct S3liKeyEvent {
     input: Vec<(KeyCode, KeyModifiers)>,
+    description: String,
 }
 #[derive(Debug)]
 pub struct S3liOnChangeEvent {}
@@ -28,8 +29,8 @@ impl<T> EventListeners<T> {
 }
 
 impl S3liKeyEvent {
-    pub fn new(input: Vec<(KeyCode, KeyModifiers)>) -> Self {
-        Self { input }
+    pub fn new(input: Vec<(KeyCode, KeyModifiers)>, description: String) -> Self {
+        Self { input, description }
     }
 
     pub fn is_equal(&self, key_event: KeyEvent) -> bool {
@@ -37,6 +38,10 @@ impl S3liKeyEvent {
             let _key_event_modifiers = &key_event.modifiers;
             *code == key_event.code && matches!(modifiers, _key_event_modifiers)
         })
+    }
+
+    pub fn get_description(&self) -> &str {
+        self.description.as_str()
     }
 }
 impl S3liOnChangeEvent {
@@ -71,6 +76,15 @@ where
                 }
             }
         }
+    }
+    fn extract_key_event_descriptions(&self) -> Vec<String> {
+        self.get_event_listeners()
+            .iter()
+            .filter_map(|item| match item {
+                EventListeners::KeyEvent(event) => Some(event.0.get_description().to_string()),
+                EventListeners::OnChangeEvent(_) => None,
+            })
+            .collect()
     }
 }
 
@@ -124,10 +138,10 @@ mod tests {
     fn test_execute_event_listeners_key_events() {
         let mut mock_component = MockComponent {
             listeners: vec![EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![(
-                    crossterm::event::KeyCode::Char('t'),
-                    KeyModifiers::NONE,
-                )]),
+                S3liKeyEvent::new(
+                    vec![(crossterm::event::KeyCode::Char('t'), KeyModifiers::NONE)],
+                    "".into(),
+                ),
                 MockComponent::update_state,
             ))],
             state: "test".into(),

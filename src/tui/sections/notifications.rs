@@ -28,9 +28,8 @@ impl NotificationsUI {
             alert: None,
         }
     }
-    pub fn refresh(mut self, notifications: Notifications) -> Self {
+    pub fn refresh(&mut self, notifications: Notifications) {
         self.notifications = notifications;
-        self
     }
     pub fn has_visible_alert(&self) -> bool {
         self.alert.is_some()

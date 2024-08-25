@@ -14,7 +14,7 @@ use crate::{
     tui::{
         components::traits::{Component, ComponentProps},
         sections::{
-            accounts::Accounts, explorer::Explorer, notifications::NotificationsUI,
+            accounts::Accounts, explorer::Explorer, hints::Hints, notifications::NotificationsUI,
             sources::Sources,
         },
     },
@@ -26,6 +26,7 @@ pub struct Dashboard {
     accounts: Accounts,
     explorer: Explorer,
     notifications: NotificationsUI,
+    hints: Hints,
     ui_tx: UnboundedSender<Action>,
     aside_constraints: [Constraint; 2],
 }
@@ -46,12 +47,14 @@ impl Dashboard {
 
         let explorer = Explorer::new(None, None, ui_tx.clone());
         let notifications = NotificationsUI::new(state.notifications.clone(), ui_tx.clone());
+        let hints = Hints::default();
         Dashboard {
             selected_component: state.selected_component.clone(),
             sources,
             accounts,
             explorer,
             notifications,
+            hints,
             ui_tx,
             aside_constraints: [Constraint::Length(3), Constraint::Fill(1)],
         }
@@ -59,7 +62,7 @@ impl Dashboard {
     pub fn handle_alert(&mut self, alert: Notification) {
         self.notifications.set_alert(Some(alert));
     }
-    pub fn refresh_components(self, state: &AppState) -> Self {
+    pub fn refresh_components(mut self, state: &AppState) -> Self {
         let sources = Sources::new(
             state.sources.get_available_sources(),
             state.sources.get_active_source(),
@@ -78,22 +81,31 @@ impl Dashboard {
             self.ui_tx.clone(),
         );
 
-        let notifications = self.notifications.refresh(state.notifications.clone());
+        self.notifications.refresh(state.notifications.clone());
         let aside_constraints =
             if matches!(&state.selected_component, &DashboardComponents::Accounts) {
                 [Constraint::Length(3), Constraint::Fill(1)]
             } else {
                 [Constraint::Fill(1), Constraint::Length(3)]
             };
+        let hints = Hints::default();
 
         Dashboard {
             selected_component: state.selected_component.clone(),
             sources,
             accounts,
             explorer,
-            notifications,
+            notifications: self.notifications,
+            hints,
             ui_tx: self.ui_tx,
             aside_constraints,
+        }
+    }
+    fn get_hints_for_selected_component(&self) -> Vec<String> {
+        match self.selected_component {
+            DashboardComponents::Sources => self.sources.get_key_event_descriptions(),
+            DashboardComponents::Accounts => self.accounts.get_key_event_descriptions(),
+            DashboardComponents::Explorer => self.explorer.get_key_event_descriptions(),
         }
     }
     fn change_selected_component(&mut self) {
@@ -103,10 +115,19 @@ impl Dashboard {
 
 impl Component for Dashboard {
     fn render(&mut self, f: &mut ratatui::prelude::Frame, _area: Rect, _: Option<ComponentProps>) {
+        self.hints
+            .update_hints(self.get_hints_for_selected_component());
+        let [dashboard, hints] = *Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Fill(1), Constraint::Length(1)])
+            .split(f.size())
+        else {
+            panic!("layout needs to have 2 chunks")
+        };
         let [aside, main] = *Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(15), Constraint::Percentage(85)])
-            .split(f.size())
+            .split(dashboard)
         else {
             panic!("layout needs to have 2 chunks")
         };
@@ -150,6 +171,7 @@ impl Component for Dashboard {
         );
 
         self.notifications.render(f, notification_section, None);
+        self.hints.render(f, hints, None);
     }
 
     fn handle_key_events(&mut self, key: KeyEvent) {

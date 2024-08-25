@@ -58,21 +58,24 @@ impl Accounts {
     fn register_listeners() -> Vec<EventListeners<Self>> {
         vec![
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![(
-                    crossterm::event::KeyCode::Char('e'),
-                    KeyModifiers::NONE,
-                )]),
+                S3liKeyEvent::new(
+                    vec![(crossterm::event::KeyCode::Char('e'), KeyModifiers::NONE)],
+                    "Properties: e".into(),
+                ),
                 Self::edit_properties,
             )),
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![(
-                    crossterm::event::KeyCode::Char('r'),
-                    KeyModifiers::NONE,
-                )]),
+                S3liKeyEvent::new(
+                    vec![(crossterm::event::KeyCode::Char('r'), KeyModifiers::NONE)],
+                    "Region: r".into(),
+                ),
                 Self::edit_region,
             )),
             EventListeners::KeyEvent((
-                S3liKeyEvent::new(vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)]),
+                S3liKeyEvent::new(
+                    vec![(crossterm::event::KeyCode::Enter, KeyModifiers::NONE)],
+                    "Confirm: <Enter>".into(),
+                ),
                 Self::confirm_selection,
             )),
         ]
@@ -98,6 +101,16 @@ impl Accounts {
                 Ok(_) => LOGGER.info(&format!("send set account with idx {idx}")),
                 Err(_) => LOGGER.info(&format!("failed to set account with idx {idx}")),
             };
+        }
+    }
+
+    pub fn get_key_event_descriptions(&self) -> Vec<String> {
+        if self.region_popup.is_popup_open() {
+            self.region_popup.extract_key_event_descriptions()
+        } else if self.edit_popup.is_popup_open() {
+            self.edit_popup.extract_key_event_descriptions()
+        } else {
+            self.extract_key_event_descriptions()
         }
     }
 }
