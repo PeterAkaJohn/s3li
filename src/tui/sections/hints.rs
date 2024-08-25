@@ -1,6 +1,6 @@
 use ratatui::{
     style::{Color, Style},
-    widgets::{Block, Borders, Paragraph},
+    widgets::{Block, Borders, Paragraph, Wrap},
 };
 
 use crate::tui::components::traits::{Component, ComponentProps};
@@ -31,7 +31,9 @@ impl Component for Hints {
         if !self.hints.is_empty() {
             let inner_container = container.inner(area);
             let style = Style::default().fg(Color::LightBlue);
-            let text = Paragraph::new(self.listeners_to_string()).style(style);
+            let text = Paragraph::new(self.listeners_to_string())
+                .style(style)
+                .wrap(Wrap { trim: true });
             f.render_widget(text, inner_container);
         }
         f.render_widget(container, area);
