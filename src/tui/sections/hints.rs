@@ -5,17 +5,18 @@ use ratatui::{
 
 use crate::tui::components::traits::{Component, ComponentProps};
 
+#[derive(Default)]
 pub struct Hints {
     hints: Vec<String>,
 }
 
 impl Hints {
-    pub fn new(hints: Vec<String>) -> Hints {
-        Self { hints }
-    }
-
     fn listeners_to_string(&self) -> String {
         self.hints.join(" | ")
+    }
+
+    pub fn update_hints(&mut self, hints: Vec<String>) {
+        self.hints = hints;
     }
 }
 
