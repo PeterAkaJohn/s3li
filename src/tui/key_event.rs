@@ -77,6 +77,15 @@ where
             }
         }
     }
+    fn extract_key_event_descriptions(&self) -> Vec<String> {
+        self.get_event_listeners()
+            .iter()
+            .filter_map(|item| match item {
+                EventListeners::KeyEvent(event) => Some(event.0.get_description().to_string()),
+                EventListeners::OnChangeEvent(_) => None,
+            })
+            .collect()
+    }
 }
 
 #[cfg(test)]

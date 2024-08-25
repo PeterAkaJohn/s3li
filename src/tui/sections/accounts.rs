@@ -103,6 +103,16 @@ impl Accounts {
             };
         }
     }
+
+    pub fn get_key_event_descriptions(&self) -> Vec<String> {
+        if self.region_popup.is_popup_open() {
+            self.region_popup.extract_key_event_descriptions()
+        } else if self.edit_popup.is_popup_open() {
+            self.edit_popup.extract_key_event_descriptions()
+        } else {
+            self.extract_key_event_descriptions()
+        }
+    }
 }
 
 impl ExecuteEventListener for Accounts {

@@ -50,6 +50,10 @@ impl Sources {
             let _ = self.ui_tx.send(Action::SetSource(idx));
         }
     }
+
+    pub fn get_key_event_descriptions(&self) -> Vec<String> {
+        self.extract_key_event_descriptions()
+    }
 }
 
 impl ExecuteEventListener for Sources {

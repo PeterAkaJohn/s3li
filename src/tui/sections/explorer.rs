@@ -237,6 +237,14 @@ impl Explorer {
         };
         self.download_component.init(files);
     }
+
+    pub fn get_key_event_descriptions(&self) -> Vec<String> {
+        if self.download_component.is_popup_open() {
+            self.download_component.extract_key_event_descriptions()
+        } else {
+            self.extract_key_event_descriptions()
+        }
+    }
 }
 
 impl WithContainer<'_> for Explorer {}
