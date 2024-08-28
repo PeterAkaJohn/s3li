@@ -75,7 +75,7 @@ impl EditAccount {
                         crossterm::event::KeyCode::Char('a'),
                         KeyModifiers::CONTROL | KeyModifiers::SHIFT,
                     )],
-                    "Add property: a".into(),
+                    "Add property: CTRL+SHIFT+a".into(),
                 ),
                 Self::open_add_property,
             )),
@@ -201,16 +201,16 @@ impl Component for EditAccount {
                 .split(f.size());
             let section = Layout::default()
                 .direction(Direction::Vertical)
-                .margin(1)
-                .constraints([Constraint::Fill(1), Constraint::Length(3)])
+                .constraints([Constraint::Fill(1), Constraint::Length(4)])
                 .split(layout[1]);
             let container = self.with_container(title, &Some(ComponentProps { selected: true }));
             f.render_widget(Clear, section[0]);
             f.render_widget(container, section[0]);
 
             let inner_layout = Layout::default()
-                .margin(2)
                 .direction(Direction::Vertical)
+                .horizontal_margin(2)
+                .vertical_margin(1)
                 .constraints(
                     self.new_properties
                         .iter()
@@ -234,7 +234,8 @@ impl Component for EditAccount {
                     if let Some(value) = value {
                         let is_selected = idx == self.selected_idx;
                         let input =
-                            InputBlock::new(value.to_string(), key.to_string(), is_selected);
+                            InputBlock::new(value.to_string(), key.to_string(), is_selected)
+                                .with_title_alignment(ratatui::layout::Alignment::Right);
                         f.render_widget(input, *property_area);
                     }
                 });

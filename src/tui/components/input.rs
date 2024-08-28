@@ -37,6 +37,7 @@ pub struct InputBlock {
     value: String,
     title: String,
     is_selected: bool,
+    title_alignment: Alignment,
 }
 
 impl InputBlock {
@@ -45,6 +46,16 @@ impl InputBlock {
             value,
             title,
             is_selected,
+            title_alignment: Alignment::Center,
+        }
+    }
+
+    pub fn with_title_alignment(self, title_alignment: Alignment) -> Self {
+        Self {
+            value: self.value,
+            title: self.title,
+            is_selected: self.is_selected,
+            title_alignment,
         }
     }
 }
@@ -68,7 +79,7 @@ impl Widget for InputBlock {
             .block(
                 Block::new()
                     .title(self.title.as_str())
-                    .title_alignment(Alignment::Center)
+                    .title_alignment(self.title_alignment)
                     .borders(Borders::ALL)
                     .border_style(input_container_style)
                     .border_type(BorderType::Rounded),

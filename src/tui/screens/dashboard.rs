@@ -145,6 +145,13 @@ impl Component for Dashboard {
         else {
             panic!("layout needs to have 2 chunks")
         };
+        self.explorer.render(
+            f,
+            content,
+            Some(ComponentProps {
+                selected: matches!(self.selected_component, DashboardComponents::Explorer),
+            }),
+        );
         self.sources.render(
             f,
             sources,
@@ -160,13 +167,6 @@ impl Component for Dashboard {
             accounts,
             Some(ComponentProps {
                 selected: matches!(self.selected_component, DashboardComponents::Accounts),
-            }),
-        );
-        self.explorer.render(
-            f,
-            content,
-            Some(ComponentProps {
-                selected: matches!(self.selected_component, DashboardComponents::Explorer),
             }),
         );
 
