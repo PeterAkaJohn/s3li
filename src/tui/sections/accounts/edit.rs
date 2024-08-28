@@ -71,11 +71,8 @@ impl EditAccount {
         vec![
             EventListeners::KeyEvent((
                 S3liKeyEvent::new(
-                    vec![(
-                        crossterm::event::KeyCode::Char('a'),
-                        KeyModifiers::CONTROL | KeyModifiers::SHIFT,
-                    )],
-                    "Add property: CTRL+SHIFT+a".into(),
+                    vec![(crossterm::event::KeyCode::Char('a'), KeyModifiers::CONTROL)],
+                    "Add property: <C>-a".into(),
                 ),
                 Self::open_add_property,
             )),

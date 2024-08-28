@@ -36,7 +36,7 @@ impl S3liKeyEvent {
     pub fn is_equal(&self, key_event: KeyEvent) -> bool {
         self.input.iter().any(|(code, modifiers)| {
             let _key_event_modifiers = &key_event.modifiers;
-            *code == key_event.code && matches!(modifiers, _key_event_modifiers)
+            *code == key_event.code && modifiers == _key_event_modifiers
         })
     }
 
@@ -50,7 +50,8 @@ impl S3liOnChangeEvent {
     }
 
     pub fn is_equal(&self, key_event: KeyEvent) -> bool {
-        matches!(key_event.code, KeyCode::Char(_) | KeyCode::Backspace)
+        !matches!(key_event.modifiers, KeyModifiers::CONTROL)
+            && matches!(key_event.code, KeyCode::Char(_) | KeyCode::Backspace)
     }
 }
 
