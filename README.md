@@ -14,12 +14,13 @@ Terminal user interface for s3, heavily inspired by lazygit, focused on making i
   * choose which bucket to explore
   * navigate files and folders of the selected bucket
   * download files to desired location (defaults to current working directory)
+  * select multiple files
+  * download multiple files
+  * download multiple folders (and all the files within)
+* global
+  * add area to display keybinds of currently selected section
 
 # Coming features
-
-## Global
-
-* add area to display keybinds of currently selected section
 
 ## Accounts
 
@@ -36,9 +37,6 @@ Terminal user interface for s3, heavily inspired by lazygit, focused on making i
 ## Explorer
 
 * view files and folder properties/permissions
-* select multiple files
-* download multiple files
-* download multiple folders (and all the files within)
 * copy selected files/folders to another bucket
 * preview of simple files, txt, json, csv ecc. (might even add parquet files, since it's what I am currently working with)
 
