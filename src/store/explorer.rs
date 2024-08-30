@@ -28,6 +28,7 @@ impl Explorer {
             client,
         }
     }
+
     pub fn update_folder(
         &self,
         current_folder: Folder,

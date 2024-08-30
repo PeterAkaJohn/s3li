@@ -12,7 +12,6 @@ use tokio::sync::{
     Mutex,
 };
 
-use crate::store::notifications::types::NotificationType;
 use crate::{action::Action, providers::AwsClient};
 
 use super::{
@@ -56,16 +55,10 @@ impl State {
                         Action::Tick => {},
                         Action::Render => {},
                         Action::Key(_) =>{},
-                        _ => self.app_state.handle_state_action(action).await,
+                        _ => {
+                            self.app_state = self.app_state.handle_state_action(action, self.tx.clone()).await?;
+                        },
                     };
-                let last_notification = self.app_state.notifications.get_last();
-                if let Some(NotificationType::Alert(alert)) = last_notification {
-                        if !alert.has_been_shown() {
-                            self.tx.send(StateEvents::Alert(alert.clone()))?;
-                        }
-                    }
-                self.tx
-                    .send(StateEvents::UpdateState(self.app_state.clone().into()))?;
                 }
             }
         }
