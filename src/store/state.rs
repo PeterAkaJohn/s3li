@@ -1,6 +1,8 @@
 mod app_state;
-pub use app_state::StateEvents;
+mod state_events;
+pub mod ui_state;
 pub use app_state::{AppState, DashboardComponents};
+pub use state_events::StateEvents;
 
 use std::sync::Arc;
 
@@ -171,7 +173,7 @@ impl State {
     pub async fn start(&mut self, mut ui_rx: UnboundedReceiver<Action>) -> Result<()> {
         // we need to send first state to unlock the ui
         self.tx
-            .send(StateEvents::UpdateState(self.app_state.clone()))?;
+            .send(StateEvents::UpdateState(self.app_state.clone().into()))?;
         // need to loop over ui_rx to react to user input
         loop {
             tokio::select! {
@@ -191,7 +193,7 @@ impl State {
                         }
                     }
                 self.tx
-                    .send(StateEvents::UpdateState(self.app_state.clone()))?;
+                    .send(StateEvents::UpdateState(self.app_state.clone().into()))?;
                 }
             }
         }

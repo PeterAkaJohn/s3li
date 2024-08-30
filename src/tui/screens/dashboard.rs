@@ -8,8 +8,7 @@ use crate::{
     action::Action,
     store::{
         notifications::types::Notification,
-        sources::WithSources,
-        state::{AppState, DashboardComponents},
+        state::{ui_state::UIState, DashboardComponents},
     },
     tui::{
         components::traits::{Component, ComponentProps},
@@ -32,11 +31,11 @@ pub struct Dashboard {
 }
 
 impl Dashboard {
-    pub fn new(state: &AppState, ui_tx: UnboundedSender<Action>) -> Self
+    pub fn new(state: &UIState, ui_tx: UnboundedSender<Action>) -> Self
     where
         Self: Sized,
     {
-        let sources = Sources::new(state.sources.get_available_sources(), &None, ui_tx.clone());
+        let sources = Sources::new(&state.sources.available_sources, &None, ui_tx.clone());
         let accounts = Accounts::new(
             &state.accounts.available_accounts,
             state.accounts.account_map.clone(),
@@ -62,10 +61,10 @@ impl Dashboard {
     pub fn handle_alert(&mut self, alert: Notification) {
         self.notifications.set_alert(Some(alert));
     }
-    pub fn refresh_components(mut self, state: &AppState) -> Self {
+    pub fn refresh_components(mut self, state: &UIState) -> Self {
         let sources = Sources::new(
-            state.sources.get_available_sources(),
-            state.sources.get_active_source(),
+            &state.sources.available_sources,
+            &state.sources.active_source,
             self.ui_tx.clone(),
         );
         let accounts = Accounts::new(
