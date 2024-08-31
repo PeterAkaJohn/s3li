@@ -1,16 +1,17 @@
 mod credentials;
 
-use core::panic;
 use std::{
     collections::HashMap,
     fs::{self, OpenOptions},
     io::Write,
 };
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use aws_config::{profile::ProfileFileCredentialsProvider, BehaviorVersion, Region};
 use aws_sdk_s3::Client;
 pub use credentials::{AuthProperties, Credentials};
+
+use crate::logger::LOGGER;
 
 #[derive(Debug, Clone)]
 pub struct AwsClient {
@@ -56,7 +57,10 @@ impl AwsClient {
     }
 
     pub async fn list_buckets(&self) -> Result<Vec<String>> {
-        let resp = self.client.list_buckets().send().await?;
+        let resp = self.client.list_buckets().send().await.map_err(|e| {
+            LOGGER.info(&format!("Error during list_buckets {:?}", e));
+            anyhow!("Error during list_buckets")
+        })?;
         let buckets = resp
             .buckets()
             .iter()
@@ -65,24 +69,34 @@ impl AwsClient {
         Ok(buckets)
     }
 
-    pub fn list_accounts(&self) -> AccountMap {
+    pub fn list_accounts(&self) -> Result<AccountMap> {
         let credentials = Credentials::default();
         match credentials.list_accounts() {
-            Ok(accounts) => accounts
+            Ok(accounts) => Ok(accounts
                 .iter()
                 .map(|account| {
                     let account_properties = credentials.get_properties(account);
                     (account.to_string(), account_properties)
                 })
-                .collect::<AccountMap>(),
-            Err(_) => panic!("failed to read credentials file"),
+                .collect::<AccountMap>()),
+            Err(e) => {
+                LOGGER.info(&format!("Error during list_accounts {:?}", e));
+                Err(anyhow!("Error during list_accounts. Try again."))
+            }
         }
     }
 
-    pub fn update_account(&mut self, account: &str, properties: AuthProperties) -> AccountMap {
+    pub fn update_account(
+        &mut self,
+        account: &str,
+        properties: AuthProperties,
+    ) -> Result<AccountMap> {
         match self.credentials.update_account(account, properties) {
             Ok(_) => self.list_accounts(),
-            Err(_) => panic!("failed to update account"),
+            Err(e) => {
+                LOGGER.info(&format!("Error during update_account {:?}", e));
+                Err(anyhow!("Error during update_account"))
+            }
         }
     }
 

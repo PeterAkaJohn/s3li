@@ -28,17 +28,20 @@ pub struct State {
 }
 
 impl State {
-    pub async fn new(client: Arc<Mutex<AwsClient>>) -> (Self, UnboundedReceiver<StateEvents>) {
+    pub async fn new(
+        client: Arc<Mutex<AwsClient>>,
+    ) -> Result<(Self, UnboundedReceiver<StateEvents>)> {
         let (tx, rx) = mpsc::unbounded_channel();
+        let accounts = Accounts::new(client.clone(), None).await?;
         let app_state = AppState {
             sources: Sources::Buckets(Buckets::new(client.clone())),
             explorer: Explorer::new(client.clone()),
-            accounts: Accounts::new(client.clone(), None).await,
+            accounts,
             action_manager: ActionManager::default(),
             notifications: Notifications::default(),
             selected_component: DashboardComponents::default(),
         };
-        (Self { tx, app_state }, rx)
+        Ok((Self { tx, app_state }, rx))
     }
 
     pub async fn start(&mut self, mut ui_rx: UnboundedReceiver<Action>) -> Result<()> {

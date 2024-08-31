@@ -1,3 +1,4 @@
+use anyhow::Result;
 use buckets::Buckets;
 pub use traits::WithSources;
 use traits::{DownloadResult, Downloadable};
@@ -29,10 +30,10 @@ impl WithSources for Sources {
         }
     }
 
-    async fn update_available_sources(&mut self) {
+    async fn update_available_sources(&mut self) -> Result<&Vec<String>> {
         match self {
             Sources::Buckets(buckets) => buckets.update_available_sources().await,
-        };
+        }
     }
 }
 
