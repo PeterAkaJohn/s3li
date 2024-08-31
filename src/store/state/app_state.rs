@@ -75,12 +75,20 @@ impl DashboardComponents {
     async fn handle_accounts_actions(&self, app_state: &mut AppState, action: &Action) {
         match action {
             Action::SetAccount(account_idx) => {
-                app_state.accounts.set_account(*account_idx).await;
-                app_state.sources.update_available_sources().await;
-                app_state.notifications.push_notification(
-                    format!("Account with idx {account_idx} has been selected"),
-                    false,
-                );
+                let account = app_state.accounts.set_account(*account_idx).await;
+                match app_state.sources.update_available_sources().await {
+                    Ok(_) => {
+                        app_state.notifications.push_notification(
+                            format!("Account {account} has been selected"),
+                            false,
+                        );
+                    }
+                    Err(_) => {
+                        app_state
+                            .notifications
+                            .push_alert(format!("Failed to set account {account}"));
+                    }
+                }
             }
             Action::ChangeRegion(new_region) => {
                 app_state.accounts.change_region(new_region.clone()).await;
@@ -88,21 +96,37 @@ impl DashboardComponents {
                     .notifications
                     .push_notification(format!("Region changed to {}", &new_region), false);
             }
-            Action::RefreshCredentials => {
-                app_state.accounts.refresh_credentials().await;
-                app_state
-                    .notifications
-                    .push_notification("Credentials refreshed".to_string(), false);
-            }
+            Action::RefreshCredentials => match app_state.accounts.refresh_credentials().await {
+                Ok(_) => {
+                    app_state
+                        .notifications
+                        .push_notification("Credentials refreshed".to_string(), false);
+                }
+                Err(_) => {
+                    app_state.notifications.push_notification(
+                        "Failed to refresh credentials. Try again.".to_string(),
+                        true,
+                    );
+                }
+            },
 
             Action::EditCredentials(account, properties) => {
-                app_state
+                match app_state
                     .accounts
                     .edit_credentials(account.clone(), properties.clone())
-                    .await;
-                app_state
-                    .notifications
-                    .push_notification("Credentials updated".to_string(), false);
+                    .await
+                {
+                    Ok(_) => {
+                        app_state
+                            .notifications
+                            .push_notification("Credentials updated".to_string(), false);
+                    }
+                    Err(_) => {
+                        app_state.notifications.push_alert(format!(
+                            "Failed to update credentials for account {account}"
+                        ));
+                    }
+                }
             }
             unhandled_action => self.default_actions(app_state, unhandled_action),
         }

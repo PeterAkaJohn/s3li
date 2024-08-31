@@ -31,7 +31,7 @@ impl Accounts {
         })
     }
 
-    pub async fn set_account(&mut self, account_idx: usize) {
+    pub async fn set_account(&mut self, account_idx: usize) -> &str {
         let account = self
             .available_accounts
             .get(account_idx)
@@ -39,6 +39,7 @@ impl Accounts {
             .unwrap_or("default");
         self.active_account = Some(account.to_string());
         self.client.lock().await.switch_account(account).await;
+        &account
     }
 
     pub async fn change_region(&mut self, new_region: String) {
