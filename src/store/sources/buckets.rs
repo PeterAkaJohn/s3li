@@ -2,6 +2,7 @@ pub mod entities;
 
 use std::sync::Arc;
 
+use anyhow::Result;
 use tokio::sync::Mutex;
 
 use crate::providers::AwsClient;
@@ -39,19 +40,15 @@ impl WithSources for Buckets {
         &self.available_sources
     }
 
-    async fn update_available_sources(&mut self) {
-        let buckets = self.client.lock().await.list_buckets().await;
-        let sources = if let Ok(buckets) = buckets {
-            buckets
-        } else {
-            vec![]
-        };
+    async fn update_available_sources(&mut self) -> Result<&Vec<String>> {
+        let sources = self.client.lock().await.list_buckets().await?;
         self.available_sources = sources;
+        Ok(&self.available_sources)
     }
 }
 
 impl Buckets {
-    pub async fn download(&self, items: Vec<impl Downloadable>) -> DownloadResult {
+    pub async fn download(&self, items: Vec<impl Downloadable>) -> Result<DownloadResult> {
         let mut result = DownloadResult::default();
         for item in items {
             let download_result = item
@@ -59,9 +56,9 @@ impl Buckets {
                     self.client.lock().await.clone(),
                     self.active_source.clone().unwrap(),
                 )
-                .await;
+                .await?;
             result = result.merge_results(download_result);
         }
-        result
+        Ok(result)
     }
 }

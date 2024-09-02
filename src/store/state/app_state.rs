@@ -61,11 +61,20 @@ impl DashboardComponents {
             Action::SetSource(source_idx) => {
                 let bucket = app_state.sources.set_source_with_idx(*source_idx);
                 if let Some(bucket) = bucket {
-                    app_state.explorer.create_file_tree(bucket).await;
-                    app_state.selected_component = DashboardComponents::Explorer;
-                    app_state
-                        .notifications
-                        .push_notification(format!("Source {bucket} has been selected"), false);
+                    match app_state.explorer.create_file_tree(bucket).await {
+                        Ok(_) => {
+                            app_state.selected_component = DashboardComponents::Explorer;
+                            app_state.notifications.push_notification(
+                                format!("Source {bucket} has been selected"),
+                                false,
+                            );
+                        }
+                        Err(_) => {
+                            app_state
+                                .notifications
+                                .push_alert(format!("Failed to set source {bucket}"));
+                        }
+                    }
                 }
             }
             unhandled_action => self.default_actions(app_state, unhandled_action),
@@ -75,12 +84,20 @@ impl DashboardComponents {
     async fn handle_accounts_actions(&self, app_state: &mut AppState, action: &Action) {
         match action {
             Action::SetAccount(account_idx) => {
-                app_state.accounts.set_account(*account_idx).await;
-                app_state.sources.update_available_sources().await;
-                app_state.notifications.push_notification(
-                    format!("Account with idx {account_idx} has been selected"),
-                    false,
-                );
+                let account = app_state.accounts.set_account(*account_idx).await;
+                match app_state.sources.update_available_sources().await {
+                    Ok(_) => {
+                        app_state.notifications.push_notification(
+                            format!("Account {account} has been selected"),
+                            false,
+                        );
+                    }
+                    Err(_) => {
+                        app_state
+                            .notifications
+                            .push_alert(format!("Failed to set account {account}"));
+                    }
+                }
             }
             Action::ChangeRegion(new_region) => {
                 app_state.accounts.change_region(new_region.clone()).await;
@@ -88,21 +105,37 @@ impl DashboardComponents {
                     .notifications
                     .push_notification(format!("Region changed to {}", &new_region), false);
             }
-            Action::RefreshCredentials => {
-                app_state.accounts.refresh_credentials().await;
-                app_state
-                    .notifications
-                    .push_notification("Credentials refreshed".to_string(), false);
-            }
+            Action::RefreshCredentials => match app_state.accounts.refresh_credentials().await {
+                Ok(_) => {
+                    app_state
+                        .notifications
+                        .push_notification("Credentials refreshed".to_string(), false);
+                }
+                Err(_) => {
+                    app_state.notifications.push_notification(
+                        "Failed to refresh credentials. Try again.".to_string(),
+                        true,
+                    );
+                }
+            },
 
             Action::EditCredentials(account, properties) => {
-                app_state
+                match app_state
                     .accounts
                     .edit_credentials(account.clone(), properties.clone())
-                    .await;
-                app_state
-                    .notifications
-                    .push_notification("Credentials updated".to_string(), false);
+                    .await
+                {
+                    Ok(_) => {
+                        app_state
+                            .notifications
+                            .push_notification("Credentials updated".to_string(), false);
+                    }
+                    Err(_) => {
+                        app_state.notifications.push_alert(format!(
+                            "Failed to update credentials for account {account}"
+                        ));
+                    }
+                }
             }
             unhandled_action => self.default_actions(app_state, unhandled_action),
         }
@@ -118,11 +151,18 @@ impl DashboardComponents {
                         tree_item,
                     )
                     .await;
-                if let Some(folder) = new_selected_folder {
-                    app_state.notifications.push_notification(
-                        format!("Folder {} has been selected", folder.name),
-                        false,
-                    );
+                match new_selected_folder {
+                    Ok(folder) => {
+                        app_state.notifications.push_notification(
+                            format!("Folder {} has been selected", folder.name),
+                            false,
+                        );
+                    }
+                    Err(_) => {
+                        app_state
+                            .notifications
+                            .push_alert(format!("Failed to select item {:?}", tree_item));
+                    }
                 }
             }
             Action::Download(items_to_download) => {
@@ -134,33 +174,45 @@ impl DashboardComponents {
 
                 let _ = LOGGER.info(&format!("download result {download_result:#?}"));
 
-                if download_result.results.iter().any(|(_, res)| res.is_err()) {
-                    let mut failed_items = vec![];
-                    for res in download_result.results {
-                        match res {
-                            (file_key, Ok(_)) => {
-                                app_state.notifications.push_notification(
-                                    format!("Successfully downloaded requested item {file_key}"),
-                                    false,
-                                );
+                match download_result {
+                    Ok(download_result) => {
+                        if download_result.results.iter().any(|(_, res)| res.is_err()) {
+                            let mut failed_items = vec![];
+                            for res in download_result.results {
+                                match res {
+                                    (file_key, Ok(_)) => {
+                                        app_state.notifications.push_notification(
+                                            format!(
+                                                "Successfully downloaded requested item {file_key}"
+                                            ),
+                                            false,
+                                        );
+                                    }
+                                    (file_key, Err(e)) => {
+                                        let _ = LOGGER
+                                            .info(&format!("error downloading item {file_key}"));
+                                        let _ = LOGGER.info(&format!("{:?}", e));
+                                        failed_items.push(file_key);
+                                    }
+                                }
                             }
-                            (file_key, Err(e)) => {
-                                let _ = LOGGER.info(&format!("error downloading item {file_key}"));
-                                let _ = LOGGER.info(&format!("{:?}", e));
-                                failed_items.push(file_key);
+                            let mut alert_message = "These items failed downloading:".to_string();
+                            for item in &failed_items {
+                                alert_message.push_str(&format!("\n{item}"));
                             }
+                            app_state.notifications.push_alert(alert_message);
+                        } else {
+                            app_state.notifications.push_notification(
+                                "Successfully downloaded requested items".to_string(),
+                                false,
+                            );
                         }
                     }
-                    let mut alert_message = "These items failed downloading:".to_string();
-                    for item in &failed_items {
-                        alert_message.push_str(&format!("\n{item}"));
+                    Err(_) => {
+                        app_state.notifications.push_alert(
+                            "An error occurred when downloading selected files".to_string(),
+                        );
                     }
-                    app_state.notifications.push_alert(alert_message);
-                } else {
-                    app_state.notifications.push_notification(
-                        "Successfully downloaded requested items".to_string(),
-                        false,
-                    );
                 }
             }
             unhandled_action => self.default_actions(app_state, unhandled_action),
