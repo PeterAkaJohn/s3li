@@ -38,7 +38,7 @@ impl WithSources for Sources {
 }
 
 impl Sources {
-    pub async fn download(&self, items: Vec<impl Downloadable>) -> DownloadResult {
+    pub async fn download(&self, items: Vec<impl Downloadable>) -> Result<DownloadResult> {
         match self {
             Sources::Buckets(buckets) => buckets.download(items).await,
         }

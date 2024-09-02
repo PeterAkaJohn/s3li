@@ -134,7 +134,7 @@ impl AwsClient {
         Ok(true)
     }
 
-    pub async fn list_objects(&self, bucket: &str, prefix: &str) -> Vec<String> {
+    pub async fn list_objects(&self, bucket: &str, prefix: &str) -> Result<Vec<String>> {
         let mut response = self
             .client
             .list_objects_v2()
@@ -153,17 +153,20 @@ impl AwsClient {
                         .collect::<Vec<_>>();
                     result_files.append(&mut files);
                 }
-                Err(_) => break,
+                Err(e) => {
+                    LOGGER.info(&format!("list_objects failed with {:?}", e));
+                    return Err(anyhow!("Error during list_objects"));
+                }
             };
         }
-        result_files
+        Ok(result_files)
     }
 
     pub async fn list_objects_one_level(
         &self,
         bucket: &str,
         current_folder: Option<&str>,
-    ) -> (Vec<String>, Vec<String>) {
+    ) -> Result<(Vec<String>, Vec<String>)> {
         let prefix = current_folder.unwrap_or("");
         let mut response = self
             .client
@@ -191,9 +194,12 @@ impl AwsClient {
                     result_files.append(&mut files);
                     result_folders.append(&mut folders);
                 }
-                Err(_) => break,
+                Err(e) => {
+                    LOGGER.info(&format!("list_objects_one_level failed with {:?}", e));
+                    return Err(anyhow!("Error during list_objects_one_level"));
+                }
             };
         }
-        (result_files, result_folders)
+        Ok((result_files, result_folders))
     }
 }

@@ -48,7 +48,7 @@ impl WithSources for Buckets {
 }
 
 impl Buckets {
-    pub async fn download(&self, items: Vec<impl Downloadable>) -> DownloadResult {
+    pub async fn download(&self, items: Vec<impl Downloadable>) -> Result<DownloadResult> {
         let mut result = DownloadResult::default();
         for item in items {
             let download_result = item
@@ -56,9 +56,9 @@ impl Buckets {
                     self.client.lock().await.clone(),
                     self.active_source.clone().unwrap(),
                 )
-                .await;
+                .await?;
             result = result.merge_results(download_result);
         }
-        result
+        Ok(result)
     }
 }

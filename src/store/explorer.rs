@@ -1,4 +1,5 @@
 mod tree;
+use anyhow::{anyhow, Result};
 pub use tree::{File, FileTree, Folder, TreeItem};
 
 use core::panic;
@@ -47,13 +48,13 @@ impl Explorer {
         current_node.clone()
     }
 
-    pub async fn create_file_tree(&mut self, bucket: &str) {
+    pub async fn create_file_tree(&mut self, bucket: &str) -> Result<bool> {
         let (files, folders) = self
             .client
             .lock()
             .await
             .list_objects_one_level(bucket, None)
-            .await;
+            .await?;
         let file_tree = FileTree::new(
             "/".parse().expect("root_folder initialization cannot fail"),
             folders
@@ -67,13 +68,10 @@ impl Explorer {
         );
         self.selected_folder = Some("/".parse().expect("root_folder initialization cannot fail"));
         self.file_tree = file_tree;
+        Ok(true)
     }
 
-    pub async fn update_file_tree(
-        &mut self,
-        bucket: &str,
-        tree_item: &TreeItem,
-    ) -> &Option<Folder> {
+    pub async fn update_file_tree(&mut self, bucket: &str, tree_item: &TreeItem) -> Result<Folder> {
         let new_selected_folder = if let TreeItem::Folder(folder, parent) = tree_item {
             if self.selected_folder == Some(folder.clone()) {
                 // this means that we need to remove child of selected
@@ -97,7 +95,7 @@ impl Explorer {
                     .map(|folder| folder.name.clone())
                     .as_deref(),
             )
-            .await;
+            .await?;
         if let Some(folder) = new_selected_folder {
             self.update_folder(
                 folder.clone(),
@@ -124,7 +122,9 @@ impl Explorer {
             );
             self.file_tree = file_tree;
         }
-        self.selected_folder = new_selected_folder.cloned();
-        &self.selected_folder
+        match new_selected_folder {
+            Some(folder) => Ok(folder.clone()),
+            None => Err(anyhow!("Error during update_file_tree")),
+        }
     }
 }

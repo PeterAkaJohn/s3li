@@ -66,5 +66,5 @@ impl DownloadResult {
 }
 
 pub trait Downloadable {
-    async fn download(&self, client: AwsClient, source: String) -> DownloadResult;
+    async fn download(&self, client: AwsClient, source: String) -> Result<DownloadResult>;
 }

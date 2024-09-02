@@ -1,4 +1,4 @@
-use anyhow::Context;
+use anyhow::{Context, Result};
 use futures::future::join_all;
 
 use crate::{
@@ -46,7 +46,7 @@ impl BucketFolder {
 }
 
 impl Downloadable for BucketFile {
-    async fn download(&self, client: AwsClient, source: String) -> DownloadResult {
+    async fn download(&self, client: AwsClient, source: String) -> Result<DownloadResult> {
         let mut result = DownloadResult::default();
         let download_result = client
             .download_file(&source, &self.key, &self.name)
@@ -58,13 +58,13 @@ impl Downloadable for BucketFile {
                 )
             });
         result.append_to_result(self.key.clone(), download_result);
-        result
+        Ok(result)
     }
 }
 
 impl Downloadable for BucketFolder {
-    async fn download(&self, client: AwsClient, source: String) -> DownloadResult {
-        let files_in_folder = client.list_objects(&source, &self.key).await;
+    async fn download(&self, client: AwsClient, source: String) -> Result<DownloadResult> {
+        let files_in_folder = client.list_objects(&source, &self.key).await?;
 
         let files_to_download = files_in_folder
             .into_iter()
@@ -86,13 +86,13 @@ impl Downloadable for BucketFolder {
             .collect::<Vec<_>>();
 
         let results = join_all(operations).await;
-        let all_results = results
-            .into_iter()
-            .map(|res| res.unwrap())
-            .collect::<Vec<_>>();
-        all_results
-            .into_iter()
-            .fold(DownloadResult::default(), |acc, res| acc.merge_results(res))
+        let all_results: Result<Vec<DownloadResult>> =
+            results.into_iter().map(|res| res?).collect();
+
+        all_results.map(|val| {
+            val.into_iter()
+                .fold(DownloadResult::default(), |acc, res| acc.merge_results(res))
+        })
     }
 }
 
@@ -125,7 +125,7 @@ impl From<TreeItem> for BucketItem {
 }
 
 impl Downloadable for BucketItem {
-    async fn download(&self, client: AwsClient, source: String) -> DownloadResult {
+    async fn download(&self, client: AwsClient, source: String) -> Result<DownloadResult> {
         match self {
             BucketItem::BucketFile(file) => file.download(client, source.to_string()).await,
             BucketItem::BucketFolder(folder) => folder.download(client, source.to_string()).await,
