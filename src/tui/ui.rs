@@ -51,19 +51,16 @@ impl Ui {
                     // println!("ticking");
                 },
                 maybe_events = term_events.next() => {
-                    match maybe_events {
-                        Some(Ok(Event::Key(event))) => {
-                            if let KeyEvent{
-                                    code: KeyCode::Char('q'),
-                                    modifiers: KeyModifiers::CONTROL | KeyModifiers::SHIFT,
-                                    ..
-                                } = event {
-                                self.tx.send(Action::Quit)?;
-                                break Ok(());
-                            }
-                            dash.handle_key_events(event);
+                    if let Some(Ok(Event::Key(event))) = maybe_events {
+                        if let KeyEvent{
+                                code: KeyCode::Char('q'),
+                                modifiers: KeyModifiers::CONTROL | KeyModifiers::SHIFT,
+                                ..
+                            } = event {
+                            self.tx.send(Action::Quit)?;
+                            break Ok(());
                         }
-                        _ => break Ok(())
+                        dash.handle_key_events(event);
                     }
                 },
                 Some(updated_state) = state_rx.recv() => {
