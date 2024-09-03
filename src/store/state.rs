@@ -12,7 +12,7 @@ use tokio::sync::{
     Mutex,
 };
 
-use crate::{action::Action, providers::AwsClient};
+use crate::{action::Action, logger::LOGGER, providers::AwsClient};
 
 use super::{
     accounts::Accounts,
@@ -53,6 +53,7 @@ impl State {
             tokio::select! {
                 Some(action) = ui_rx.recv() => {
                     self.app_state.action_manager.push(action.clone());
+                    LOGGER.info(&format!("{:?}", action));
                     match action {
                         Action::Quit => break Ok(()),
                         Action::Tick => {},

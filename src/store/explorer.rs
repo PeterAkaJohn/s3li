@@ -8,7 +8,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex as TokioMutex;
 use tree::TreeNode;
 
-use crate::providers::AwsClient;
+use crate::providers::{AwsClient, ProviderClient};
 
 #[derive(Debug, Clone)]
 pub struct Explorer {
@@ -53,7 +53,7 @@ impl Explorer {
             .client
             .lock()
             .await
-            .list_objects_one_level(bucket, None)
+            .list_objects_in_folder(bucket, None)
             .await?;
         let file_tree = FileTree::new(
             "/".parse().expect("root_folder initialization cannot fail"),
@@ -89,7 +89,7 @@ impl Explorer {
             .client
             .lock()
             .await
-            .list_objects_one_level(
+            .list_objects_in_folder(
                 bucket,
                 new_selected_folder
                     .map(|folder| folder.name.clone())

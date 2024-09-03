@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use tokio::sync::Mutex;
 
-use crate::providers::{AccountMap, AuthProperties, AwsClient};
+use crate::providers::{AccountMap, AuthProperties, AwsClient, ProviderClient};
 
 #[derive(Debug, Clone)]
 pub struct Accounts {

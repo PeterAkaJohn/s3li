@@ -5,7 +5,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use tokio::sync::Mutex;
 
-use crate::providers::AwsClient;
+use crate::providers::{AwsClient, ProviderClient};
 
 use super::traits::{DownloadResult, Downloadable, WithSources};
 
