@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::providers::AwsClient;
+use crate::providers::{AwsClient, ProviderClient};
 
 pub trait WithSources {
     fn set_source_with_idx(&mut self, idx: usize) -> &Option<String>;
@@ -66,5 +66,9 @@ impl DownloadResult {
 }
 
 pub trait Downloadable {
-    async fn download(&self, client: AwsClient, source: String) -> Result<DownloadResult>;
+    async fn download(
+        &self,
+        client: impl ProviderClient + Clone + 'static,
+        source: String,
+    ) -> Result<DownloadResult>;
 }

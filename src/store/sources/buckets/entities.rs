@@ -46,7 +46,11 @@ impl BucketFolder {
 }
 
 impl Downloadable for BucketFile {
-    async fn download(&self, client: AwsClient, source: String) -> Result<DownloadResult> {
+    async fn download(
+        &self,
+        client: impl ProviderClient + Clone + 'static,
+        source: String,
+    ) -> Result<DownloadResult> {
         let mut result = DownloadResult::default();
         let download_result = client
             .download_file(&source, &self.key, &self.name)
@@ -63,7 +67,11 @@ impl Downloadable for BucketFile {
 }
 
 impl Downloadable for BucketFolder {
-    async fn download(&self, client: AwsClient, source: String) -> Result<DownloadResult> {
+    async fn download(
+        &self,
+        client: impl ProviderClient + Clone + 'static,
+        source: String,
+    ) -> Result<DownloadResult> {
         let files_in_folder = client.list_objects(&source, &self.key).await?;
 
         let files_to_download = files_in_folder
@@ -125,7 +133,11 @@ impl From<TreeItem> for BucketItem {
 }
 
 impl Downloadable for BucketItem {
-    async fn download(&self, client: AwsClient, source: String) -> Result<DownloadResult> {
+    async fn download(
+        &self,
+        client: impl ProviderClient + Clone + 'static,
+        source: String,
+    ) -> Result<DownloadResult> {
         match self {
             BucketItem::BucketFile(file) => file.download(client, source.to_string()).await,
             BucketItem::BucketFolder(folder) => folder.download(client, source.to_string()).await,

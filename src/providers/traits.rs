@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use super::{AccountMap, AuthProperties};
 
-pub trait ProviderClient {
+pub trait ProviderClient: Send {
     async fn switch_account(&mut self, new_account: &str);
     async fn change_region(&mut self, region: String);
 
@@ -12,7 +12,12 @@ pub trait ProviderClient {
 
     fn update_account(&mut self, account: &str, properties: AuthProperties) -> Result<AccountMap>;
 
-    async fn download_file(&self, bucket: &str, file_key: &str, file_name: &str) -> Result<bool>;
+    fn download_file(
+        &self,
+        bucket: &str,
+        file_key: &str,
+        file_name: &str,
+    ) -> impl std::future::Future<Output = Result<bool>> + std::marker::Send;
 
     async fn list_objects(&self, bucket: &str, prefix: &str) -> Result<Vec<String>>;
     async fn list_objects_in_folder(
