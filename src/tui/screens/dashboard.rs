@@ -7,6 +7,7 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::{
     action::Action,
     store::{
+        explorer::{FileTree, Folder},
         notifications::types::Notification,
         state::{ui_state::UIState, DashboardComponents},
     },
@@ -61,6 +62,11 @@ impl Dashboard {
     pub fn handle_alert(&mut self, alert: Notification) {
         self.notifications.set_alert(Some(alert));
     }
+
+    pub fn refresh_explorer(&mut self, file_tree: FileTree, selected_folder: Option<Folder>) {
+        self.explorer.refresh(file_tree, selected_folder);
+    }
+
     pub fn refresh_components(mut self, state: &UIState) -> Self {
         let sources = Sources::new(
             &state.sources.available_sources,
@@ -74,10 +80,14 @@ impl Dashboard {
             &state.accounts.active_account,
             self.ui_tx.clone(),
         );
-        let explorer = Explorer::new(
-            Some(state.explorer.file_tree.clone()),
+        // let explorer = Explorer::new(
+        //     Some(state.explorer.file_tree.clone()),
+        //     state.explorer.selected_folder.clone(),
+        //     self.ui_tx.clone(),
+        // );
+        self.explorer.refresh(
+            state.explorer.file_tree.clone(),
             state.explorer.selected_folder.clone(),
-            self.ui_tx.clone(),
         );
 
         self.notifications.refresh(state.notifications.clone());
@@ -93,7 +103,7 @@ impl Dashboard {
             selected_component: state.selected_component.clone(),
             sources,
             accounts,
-            explorer,
+            explorer: self.explorer,
             notifications: self.notifications,
             hints,
             ui_tx: self.ui_tx,

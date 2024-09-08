@@ -85,6 +85,35 @@ impl Explorer {
             listeners: Self::register_listeners(),
         }
     }
+
+    pub fn refresh(&mut self, file_tree: FileTree, selected_folder: Option<Folder>) {
+        let file_tree_vec = file_tree
+            .tree_to_vec()
+            .into_iter()
+            .filter(|tree_item| {
+                if let TreeItem::Folder(folder, _) = tree_item {
+                    return folder.name != *"/";
+                }
+                true
+            })
+            .collect::<Vec<TreeItem>>();
+        self.file_tree = file_tree_vec;
+
+        let current_folder_idx = selected_folder.and_then(|val| {
+            self.file_tree.iter().position(|tree_item| {
+                if let TreeItem::Folder(folder, _) = tree_item {
+                    *folder.name == val.name
+                } else {
+                    false
+                }
+            })
+        });
+
+        if current_folder_idx.is_some() {
+            self.current_folder_idx = current_folder_idx;
+        }
+    }
+
     pub fn set_active_idx(&mut self, active_idx: Option<usize>) {
         self.current_folder_idx = active_idx;
     }
