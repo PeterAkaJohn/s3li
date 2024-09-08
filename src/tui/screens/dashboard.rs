@@ -80,11 +80,6 @@ impl Dashboard {
             &state.accounts.active_account,
             self.ui_tx.clone(),
         );
-        // let explorer = Explorer::new(
-        //     Some(state.explorer.file_tree.clone()),
-        //     state.explorer.selected_folder.clone(),
-        //     self.ui_tx.clone(),
-        // );
         self.explorer.refresh(
             state.explorer.file_tree.clone(),
             state.explorer.selected_folder.clone(),
