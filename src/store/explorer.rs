@@ -2,16 +2,12 @@ mod tree;
 use anyhow::{anyhow, Result};
 pub use tree::{File, FileTree, Folder, TreeItem};
 
-use core::panic;
 use std::sync::Arc;
 
 use tokio::sync::Mutex as TokioMutex;
 use tree::TreeNode;
 
-use crate::{
-    logger::LOGGER,
-    providers::{AwsClient, ProviderClient},
-};
+use crate::providers::{AwsClient, ProviderClient};
 
 #[derive(Debug, Clone)]
 pub struct Explorer {
