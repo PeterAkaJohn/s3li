@@ -8,7 +8,10 @@ use std::sync::Arc;
 use tokio::sync::Mutex as TokioMutex;
 use tree::TreeNode;
 
-use crate::providers::{AwsClient, ProviderClient};
+use crate::{
+    logger::LOGGER,
+    providers::{AwsClient, ProviderClient},
+};
 
 #[derive(Debug, Clone)]
 pub struct Explorer {
@@ -78,13 +81,14 @@ impl Explorer {
                 // folder so we return the parent
                 parent
                     .as_ref()
-                    .filter(|parent_folder| parent_folder.name != "/")
+                    .filter(|parent_folder| parent_folder.name != *"/")
             } else {
                 Some(folder)
             }
         } else {
-            panic!("cannot be a file tree_item");
+            return Err(anyhow!("cannot be a file tree_item"));
         };
+
         let (files, folders) = self
             .client
             .lock()
@@ -122,9 +126,10 @@ impl Explorer {
             );
             self.file_tree = file_tree;
         }
+        self.selected_folder = new_selected_folder.cloned();
         match new_selected_folder {
             Some(folder) => Ok(folder.clone()),
-            None => Err(anyhow!("Error during update_file_tree")),
+            None => Ok("/".parse().expect("root_folder cannot fail")),
         }
     }
 }
