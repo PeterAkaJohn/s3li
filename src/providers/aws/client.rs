@@ -59,7 +59,7 @@ impl ProviderClient for AwsClient {
 
     async fn list_buckets(&self) -> Result<Vec<String>> {
         let resp = self.client.list_buckets().send().await.map_err(|e| {
-            LOGGER.info(&format!("Error during list_buckets {:?}", e));
+            let _ = LOGGER.info(&format!("Error during list_buckets {:?}", e));
             anyhow!("Error during list_buckets")
         })?;
         let buckets = resp
@@ -81,7 +81,7 @@ impl ProviderClient for AwsClient {
                 })
                 .collect::<AccountMap>()),
             Err(e) => {
-                LOGGER.info(&format!("Error during list_accounts {:?}", e));
+                let _ = LOGGER.info(&format!("Error during list_accounts {:?}", e));
                 Err(anyhow!("Error during list_accounts. Try again."))
             }
         }
@@ -91,7 +91,7 @@ impl ProviderClient for AwsClient {
         match self.credentials.update_account(account, properties) {
             Ok(_) => self.list_accounts(),
             Err(e) => {
-                LOGGER.info(&format!("Error during update_account {:?}", e));
+                let _ = LOGGER.info(&format!("Error during update_account {:?}", e));
                 Err(anyhow!("Error during update_account"))
             }
         }
@@ -146,7 +146,7 @@ impl ProviderClient for AwsClient {
                     result_files.append(&mut files);
                 }
                 Err(e) => {
-                    LOGGER.info(&format!("list_objects failed with {:?}", e));
+                    let _ = LOGGER.info(&format!("list_objects failed with {:?}", e));
                     return Err(anyhow!("Error during list_objects"));
                 }
             };
@@ -187,7 +187,7 @@ impl ProviderClient for AwsClient {
                     result_folders.append(&mut folders);
                 }
                 Err(e) => {
-                    LOGGER.info(&format!("list_objects_one_level failed with {:?}", e));
+                    let _ = LOGGER.info(&format!("list_objects_one_level failed with {:?}", e));
                     return Err(anyhow!("Error during list_objects_one_level"));
                 }
             };

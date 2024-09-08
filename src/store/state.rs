@@ -53,7 +53,7 @@ impl State {
             tokio::select! {
                 Some(action) = ui_rx.recv() => {
                     self.app_state.action_manager.push(action.clone());
-                    LOGGER.info(&format!("{:?}", action));
+                    let _ = LOGGER.info(&format!("{:?}", action));
                     match action {
                         Action::Quit => break Ok(()),
                         Action::Tick => {},

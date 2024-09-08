@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::providers::{AwsClient, ProviderClient};
+use crate::providers::ProviderClient;
 
 pub trait WithSources {
     fn set_source_with_idx(&mut self, idx: usize) -> &Option<String>;

@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use futures::future::join_all;
 
 use crate::{
-    providers::{AwsClient, ProviderClient},
+    providers::ProviderClient,
     store::{
         explorer::{File, Folder, TreeItem},
         sources::traits::{DownloadResult, Downloadable},
